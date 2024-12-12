@@ -5,5 +5,15 @@
         <Button text="TAP" tap="{{ onTap }}" class="-primary" />
         <Button text="FTP" tap="{{ onFtp }}" class="-primary" />
         <Label text="{{ message }}" class="text-lg text-center text-gray-400" textWrap="true" />
+		<ListView items="{{ items }}" itemTap="{{ onPastaSelecionada }}">
+		  <ListView.itemTemplate>
+			<!-- The item template can only have a single root element -->
+			<GridLayout padding="16" columns="20, *">
+			  <ContentView width="20" height="20" borderRadius="20" backgroundColor="#65adf1" />
+			  <Label text="{{ name }}" col="1" textWrap="true" marginLeft="8"/>
+			</GridLayout>
+		  </ListView.itemTemplate>
+		</ListView>
     </StackLayout>
+	
 </Page>
