@@ -9,7 +9,7 @@ android {
   // ndkVersion ""
 
   defaultConfig {
-	applicationId "org.nativescript.app"
+	  applicationId "org.homesync.app"
     minSdkVersion 23
     targetSdkVersion 34
 

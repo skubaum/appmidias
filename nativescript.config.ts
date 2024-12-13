@@ -1,7 +1,7 @@
 import { NativeScriptConfig } from '@nativescript/core';
 
 export default {
-  id: 'org.nativescript.app',
+  id: 'org.homesync.app',
   appPath: 'app',
   appResourcesPath: 'App_Resources',
   android: {

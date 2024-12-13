@@ -1,10 +1,12 @@
 {
-  "name": "samplejs",
+  "name": "org.homesync.app",
   "main": "app/app.js",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@nativescript-community/perms": "^2.3.6",
     "@nativescript/core": "~8.8.0",
+    "nativescript-app-environment": "^1.0.0",
     "nativescript-ftp-client": "^1.0.2"
   },
   "devDependencies": {

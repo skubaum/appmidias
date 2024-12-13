@@ -4,6 +4,7 @@
         <Label text="Please tap me" class="text-3xl text-center" />
         <Button text="TAP" tap="{{ onTap }}" class="-primary" />
         <Button text="FTP" tap="{{ onFtp }}" class="-primary" />
+        <Button text="Listar" tap="{{ onListar }}" class="-primary" />
         <Label text="{{ message }}" class="text-lg text-center text-gray-400" textWrap="true" />
 		<ListView items="{{ items }}" itemTap="{{ onPastaSelecionada }}">
 		  <ListView.itemTemplate>
