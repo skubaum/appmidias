@@ -7,6 +7,7 @@
     "@nativescript-community/perms": "^2.3.6",
     "@nativescript/core": "~8.8.0",
     "nativescript-app-environment": "^1.0.0",
+    "nativescript-background-fetch": "^1.2.1",
     "nativescript-ftp-client": "^1.0.2"
   },
   "devDependencies": {

@@ -16,6 +16,8 @@
 	<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 	<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 	<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+	<uses-permission android:name="android.permission.WAKE_LOCK" />
 
 	<application
 		android:name="com.tns.NativeScriptApplication"
@@ -42,5 +44,27 @@
 			</intent-filter>
 		</activity>
 		<activity android:name="com.tns.ErrorReportActivity"/>
+
+		<service android:name="com.transistorsoft.backgroundfetch.HeadlessJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+
+		<receiver android:name="com.transistorsoft.backgroundfetch.HeadlessBroadcastReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="${applicationId}.event.BACKGROUND_FETCH"/>
+            </intent-filter>
+        </receiver>
+
+		<receiver android:name="com.transistorsoft.tsbackgroundfetch.FetchAlarmReceiver" android:exported="true"/>
+
+        <service
+            android:name="com.transistorsoft.tsbackgroundfetch.FetchJobService"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver android:name="com.transistorsoft.tsbackgroundfetch.BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 	</application>
 </manifest>

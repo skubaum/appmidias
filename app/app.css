@@ -1,3 +1,33 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.far {
+    font-family: 'Font Awesome 5 Free', 'fa-regular-400';
+    font-weight: 400;
+}
+
+.fas {
+    font-family: 'Font Awesome 5 Free', 'fa-solid-900';
+    font-weight: 900;
+    font-size: 2rem;
+}
+
+.round-button {
+    width: 110px;
+    height: 110px;
+    border-radius: 55px;
+    padding: 0;
+    background-color: #007BFF; /* Cor original */
+    color: white;
+    font-size: 20px;
+    text-align: center;
+    vertical-align: middle;
+    border-width: 0;
+    transition: background-color 0.3s; /* Suaviza a transição de cor */
+}
+
+.round-button:active {
+    background-color: #FF0000; /* Cor ao ser pressionado */
+}
