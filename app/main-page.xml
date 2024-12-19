@@ -7,22 +7,68 @@
         <Button text="Listar" tap="{{ onListar }}" class="-primary" />
 		<Button text="Task" tap="{{ onTask }}" class="-primary" />
         <Label text="{{ message }}" class="text-lg text-center text-gray-400" textWrap="true" />
-		<ListView items="{{ items }}">
-		  <ListView.itemTemplate>
-			<!-- The item template can only have a single root element -->
-			<GridLayout rows="30, auto" columns="*" borderWidth="1" borderColor="black">
-			  <GridLayout row="0" columns="25, *">
-			  	<ContentView col="0" width="20" height="20" borderRadius="20" backgroundColor="#65adf1" />
-			  	<Label col="1" text="{{ nome }}" textWrap="true" />
-			  </GridLayout>
-			  <GridLayout row="1" columns="*, 45, 45, auto">
-			    <Label col="0" text="{{ status }}" />
-				<Button col="1" class="fas round-button" text="&#xf144;" tap="{{ $parents['ListView'].onEnviar }}"/>
-				<Button col="2" class="fas round-button" text="&#xf28d;" tap="{{ $parents['ListView'].onCancelar }}" />
-				<Button col="3" class="fas round-button" text="&#xf1f8;" tap="onCancel" />
-			  </GridLayout>
-			</GridLayout>
-		  </ListView.itemTemplate>
-		</ListView>
+		<TabView>
+			<TabViewItem title="{{ contar(items, {status: 'SALVO REMOTO'}, 'Salvos') }}">
+				<ListView items="{{ filtrar(items, {status: 'SALVO REMOTO'}) }}">
+					<ListView.itemTemplate>
+						<!-- The item template can only ha ve a single root element -->
+						<GridLayout rows="30, auto, auto" columns="*" borderWidth="1" borderColor="black">
+							<GridLayout row="0" columns="25, *, auto">
+								<ContentView col="0" width="20" height="20" borderRadius="20" backgroundColor="#65adf1" />
+								<Label col="1" text="{{ nome }}" textWrap="true" />
+								<Label col="2" text="{{ tamanhoFmt }}" />
+							</GridLayout>
+							<Label row="1" text="{{ dataModificacaoStr }}" />
+							<GridLayout row="2" columns="*, auto, auto">
+								<Label col="0" text="{{ status }}" />
+								<Button col="1" class="fas round-button" text="&#xf1f8;" tap="{{ $parents['ListView'].onExcluir }}" />
+								<Button col="2" class="fas round-button" text="&#xf05a;" tap="{{ $parents['ListView'].onInfo }}" />
+							</GridLayout>
+						</GridLayout>
+					</ListView.itemTemplate>
+				</ListView>
+			</TabViewItem>
+			<TabViewItem title="{{ contar(items, {status: 'NÃO SALVO'}, 'Não salvos') }}">
+				<ListView items="{{ filtrar(items, {status: 'NÃO SALVO'}) }}">
+					<ListView.itemTemplate>
+						<!-- The item template can only have a single root element -->
+						<GridLayout rows="30, auto, auto" columns="*" borderWidth="1" borderColor="black">
+							<GridLayout row="0" columns="25, *, auto">
+								<ContentView col="0" width="20" height="20" borderRadius="20" backgroundColor="#65adf1" />
+								<Label col="1" text="{{ nome }}" textWrap="true" />
+								<Label col="2" text="{{ tamanhoFmt }}" />
+							</GridLayout>
+							<Label row="1" text="{{ dataModificacaoStr }}" />
+							<GridLayout row="2" columns="*, 45, auto">
+								<Label col="0" text="{{ status }}" />
+								<Button col="1" class="fas round-button" text="&#xf144;" tap="{{ $parents['ListView'].onEnviar }}"/>
+								<Button col="2" class="fas round-button" text="&#xf28d;" tap="{{ $parents['ListView'].onCancelar }}" />
+							</GridLayout>
+						</GridLayout>
+					</ListView.itemTemplate>
+				</ListView>
+			</TabViewItem>
+			<TabViewItem title="{{ contar(items, {status: 'CONFLITO'}, 'Conflito') }}">
+				<ListView items="{{ filtrar(items, {status: 'CONFLITO'}) }}">
+					<ListView.itemTemplate>
+						<!-- The item template can only ha ve a single root element -->
+						<GridLayout rows="30, auto, auto" columns="*" borderWidth="1" borderColor="black">
+							<GridLayout row="0" columns="25, *, auto">
+								<ContentView col="0" width="20" height="20" borderRadius="20" backgroundColor="#65adf1" />
+								<Label col="1" text="{{ nome }}" textWrap="true" />
+								<Label col="2" text="{{ tamanhoFmt }}" />
+							</GridLayout>
+							<Label row="1" text="{{ dataModificacaoStr }}" />
+							<GridLayout row="2" columns="*, auto, auto, auto">
+								<Label col="0" text="{{ status }}" />
+								<Label col="1" text="{{ statusExtra }}" />
+								<Button col="2" class="fas round-button" text="&#xf1f8;" tap="{{ $parents['ListView'].onExcluirRemoto }}" />
+								<Button col="3" class="fas round-button" text="&#xf05a;" tap="{{ $parents['ListView'].onInfo }}" />
+							</GridLayout>
+						</GridLayout>
+					</ListView.itemTemplate>
+				</ListView>
+			</TabViewItem>
+		</TabView>
     </StackLayout>
 </Page>

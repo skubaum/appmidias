@@ -49,7 +49,8 @@ export class FileUtils {
                 f.tipo = f.isFolder ? "pasta" : "arquivo";
                 f.nome = f.name;
                 f.tamanho = f.size;
-                f.dataModificacao = DataUtils.formatarData(new Date(f.lastModified), "dd/MM/yyyy HH:mm:ss");
+                f.dataModificacao = new Date(f.lastModified);
+                f.dataModificacaoStr = DataUtils.formatarData(new Date(f.lastModified), "dd/MM/yyyy HH:mm:ss");
                 resultado.push(f);
                 // console.log("AQUI1: ", entity);
                 // if (entity.isFile) {
@@ -125,7 +126,8 @@ export class FtpUtils {
                 f.tipo = mapTipos[f.type];
                 f.nome = f.name;
                 f.tamanho = f.size;
-                f.dataModificacao = DataUtils.formatarData(new Date(f.mdate), "dd/MM/yyyy HH:mm:ss");
+                f.dataModificacaoStr = DataUtils.formatarData(new Date(f.mdate), "dd/MM/yyyy HH:mm:ss");
+                f.dataModificacao = new Date(f.mdate);
                 if (param.grupos.includes(f.tipo)) {
                     pastas.push(f);
                 }
@@ -145,11 +147,25 @@ export class FtpUtils {
             var client = await this.contexto();
             await client.changeDirectory(param.pastaDestino);
             await client.upload(param.arquivo._path);
-            const dd = DataUtils.formatarData(new Date(param.arquivo._lastModified), "yyyyMMddHHmmss");
+            const ddConv = new Date(param.arquivo.lastModified).toUTCString() + "-0300";
+            const dd = DataUtils.formatarData(new Date(ddConv), "yyyyMMddHHmmss");
             const comando = `MFMT ${dd} /${param.pastaDestino}/${param.arquivo.nome}`;
             console.log("copiarArquivo: ", comando);
             const rr = await client.sendCustomCommand(comando);
             console.log("copiarArquivo: ", rr);
+            client.disconnect();
+            return {codRet: 1};
+        } catch (ex) {
+            console.log(ex);
+            return {codRet: 0, error: ex};
+        }
+    }
+
+    static async excluirArquivo(param) {
+        console.log("excluirArquivo: ", param);
+        try {
+            var client = await this.contexto();
+            await client.deleteFile(param.arquivo);
             client.disconnect();
             return {codRet: 1};
         } catch (ex) {
@@ -427,5 +443,16 @@ export class DataUtils {
             return param.trim() == '';
         }
         return param == '';
+    }
+
+    static formatarBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024)); // Determina a unidade apropriada
+        
+        const value = (bytes / Math.pow(1024, i)).toFixed(2); // Converte o valor com duas casas decimais
+        
+        return `${value} ${sizes[i]}`; // Retorna o valor formatado
     }
   }

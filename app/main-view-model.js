@@ -1,6 +1,6 @@
-import { Observable, knownFolders, path, ObservableArray, fromObject } from '@nativescript/core';
+import { Observable, knownFolders, path, ObservableArray, fromObject, confirm } from '@nativescript/core';
 import { FtpClient } from 'nativescript-ftp-client';
-import { FileUtils, FtpUtils } from './utils';
+import { FileUtils, FtpUtils, Utils, DataUtils } from './utils';
 import { request } from "@nativescript-community/perms";
 import { BackgroundFetch } from 'nativescript-background-fetch';
 
@@ -19,11 +19,14 @@ export function createViewModel() {
   viewModel.counter = 2;
   viewModel.message = getMessage(viewModel.counter);
   viewModel.items = new ObservableArray([]);
+  viewModel.qtdSalvos = "Salvos";
+  viewModel.qtdNaoSalvos = "Não salvos";
 
   viewModel.onTap = () => {
     viewModel.counter--;
     viewModel.set('message', getMessage(viewModel.counter));
-    viewModel.set('status', "Enviando....");
+    viewModel.set('qtdSalvos', "Salvos: 21");
+    viewModel.set('qtdNaoSalvos', "Não salvos: 300");
 
     // log the message to the console  
     console.log(getMessage(viewModel.counter));
@@ -40,23 +43,20 @@ export function createViewModel() {
     }
   };
   
-  viewModel.onPastaSelecionada = async (args) => {
-    const listView = args.object;
-    console.log('Tapped index', args.index);
-    console.log('Tapped item ', listView.items[args.index]);
-    const ret = await FtpUtils.copiarArquivo({arquivo: listView.items[args.index], pastaDestino: "Arquivos/Testes"});
-    if (ret.codRet == 1) {
-      viewModel.set('message', "Copiou com Sucesso");
-    } else {
-      viewModel.set('message', "Deu erro: " + ret.error);
-      console.log('Erro: ', ret.error);
-    }
-  }
-
   viewModel.onEnviar = onEnviar;
-
   viewModel.onListar = onListar;
+  viewModel.onExcluir = onExcluir;
+  viewModel.onExcluirRemoto = onExcluirRemoto;
+  viewModel.onInfo = onInfo;
   viewModel.onTask = configureBackgroundFetch;
+  viewModel.filtrar = filtrar;
+  viewModel.contar = (lista, objFiltro, titulo) => {
+    const val = filtrar(lista, objFiltro);
+    if (lista.length == 0) {
+      return titulo;
+    }
+    return `${titulo} - ${val.length}`;
+  };
 
   viewModel.onCancelar = (args) => {
 
@@ -67,7 +67,7 @@ export function createViewModel() {
   return viewModel;
 }
 
-export async function onEnviar(args) {
+async function onEnviar(args) {
   const page = args.object.page;
   const viewModel = page.bindingContext;
 
@@ -80,12 +80,11 @@ export async function onEnviar(args) {
   // viewModel.items[index].set("status", "Copiando...");
   // viewModel.items[index].status = "Copiando...";
   item.status = "Copiando...";
-  console.log("AQUI: ", viewModel.items);
+  console.log("AQUI:  ", viewModel.items);
   // viewModel.items.notifyChange();
   console.log("Enviar pressionado no item: ", index, item);
 
-  const ret = await FtpUtils.copiarArquivo({arquivo: item, pastaDestino: "Arquivos/Fotos/CelularDaniel"});
-  // const ret = await FtpUtils.copiarArquivo({arquivo: item, pastaDestino: "Arquivos/Testes"});
+  const ret = await FtpUtils.copiarArquivo({arquivo: item.arqOriginal, pastaDestino: item.pastaRemota});
   if (ret.codRet == 1) {
     // viewModel.set('message', "Copiou com Sucesso");
     // viewModel.items[index].set("status", "Copiou com Sucesso");
@@ -97,55 +96,144 @@ export async function onEnviar(args) {
     // viewModel.items[index].set("status", "Deu erro: " + ret.error);
     // viewModel.items[index].status = "Deu erro: " + ret.error;
     console.log('Erro: ', ret.error);
-    item.status = "NÃO SALVO" + ret.error;
+    item.status = "NÃO SALVO";
   }
-  // viewModel.items.notifyChange();
+  viewModel.notifyPropertyChange("itens", []);
+}
 
-  
+function onExcluir(args) {
+  const page = args.object.page;
+  const viewModel = page.bindingContext;
+  const item = args.object.bindingContext;
+  const index = viewModel.items.indexOf(item);
+
+  confirm({
+    title: "Confirmação",
+    message: "Você tem certeza que deseja excluir?",
+    okButtonText: "Sim",
+    cancelButtonText: "Não",
+  }).then((result) => {
+      if (result) {
+          console.log("Ação confirmada: ", index);
+      } else {
+          console.log("Ação cancelada: ", index);
+      }
+  });
+}
+
+async function onExcluirRemoto(args) {
+  // const page = args.object.page;
+  // const viewModel = page.bindingContext;
+  const item = args.object.bindingContext;
+  const index = viewModel.items.indexOf(item);
+
+  confirm({
+    title: "Confirmação",
+    message: "Você tem certeza que deseja excluir?",
+    okButtonText: "Sim",
+    cancelButtonText: "Não",
+  }).then((result) => {
+      if (result) {
+          console.log("Ação confirmada: ", `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}`);
+          const param = {arquivo: `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}`};
+          FtpUtils.excluirArquivo(param).then((result) => {
+            if (result.codRet == 1) {
+              console.log("Arquivo excluido: ", result);
+              item.status = "NÃO SALVO";
+              viewModel.notifyPropertyChange("itens", []);
+            } else {
+              console.log("Erro excluindo: ", result);
+            }
+          });
+      } else {
+          console.log("Ação cancelada: ", index);
+      }
+  });
+}
+
+function onInfo(args) {
+  const page = args.object.page;
+  const viewModel = page.bindingContext;
+  const item = args.object.bindingContext;
+  const index = viewModel.items.indexOf(item);
+
+  console.log(item);
 }
 
 async function onListar(param, p2) {
   console.log("onListar: ", param, p2);
-  let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: "Arquivos/Fotos/CelularDaniel"});
-  // let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: "Arquivos/Testes"});
-  retRemoto.map = {};
-  if (retRemoto.codRet == 1) {
-    console.log("Qtd ftp:  ", retRemoto.resultado.length);
-    for (let f of retRemoto.resultado) {
-      retRemoto.map[f.nome] = f;
+  const configAll = [
+    {pastaRemota: "Arquivos/Fotos/CelularDaniel", pastaLocal: "DCIM/Camera", tipos: ["jpg"]},
+    {pastaRemota: "Arquivos/Videos/CelularDaniel", pastaLocal: "DCIM/Camera", tipos: ["mp4"]}
+  ];
+  const configAll1 = [
+    {pastaRemota: "Arquivos/Testes", pastaLocal: "DCIM/Camera", tipos: ["jpg"]}
+  ];
+  var arrFinal = [];
+  for (let conf of configAll) {
+    if (conf.tipos == null) {
+      conf.tipos = [];
     }
-  } else {
-    viewModel.set('message', JSON.stringify(retRemoto.error));
-    return;
-  }
-
-  var retLocal = FileUtils.listarArquivosPorPasta({pasta: "DCIM/Camera"});
-  if (retLocal.codRet == 1) {
-    viewModel.set('message', "Qtd arquivos: " + retLocal.resultado.length);
-    console.log("Qtd arquivos: ", retLocal.resultado.length);
-    var arrFinal = [];
-    for (let f of retLocal.resultado) {
-      // console.log("local: ", f);
-      if (retRemoto.map[f.nome] != null) {
-        console.log("Arquivo ja salvo:  ", f);
-        f.status = "SALVO REMOTO";
-        f.info = info;
-      } else {
-        f.status = "NÃO SALVO";
-        f.info = info;
+    let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: conf.pastaRemota});
+    retRemoto.map = {};
+    if (retRemoto.codRet == 1) {
+      console.log("Qtd ftp:  ", retRemoto.resultado.length);
+      for (let f of retRemoto.resultado) {
+        retRemoto.map[f.nome] = f;
       }
-      arrFinal.push(fromObject(f));
-      // retLocal.map[f.name] = f;
+    } else {
+      viewModel.set('message', JSON.stringify(retRemoto.error));
+      return;
     }
-    viewModel.set('items', new ObservableArray(arrFinal));
-  } else {
-    console.log("onListar: ", retLocal.error);
-    viewModel.set('message', "Erro:  " + retLocal.error);
-    return;
+
+    var retLocal = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal});
+    if (retLocal.codRet == 1) {
+      console.log("Qtd arquivos: ", retLocal.resultado.length);
+      
+      for (let f of retLocal.resultado) {
+        if (conf.tipos.length > 0) {
+          if (!conf.tipos.includes(f._extension.substr(1))) {
+            //console.log("tipo nao aceito: ", f._extension.substr(1), f, conf);
+            continue;
+          }
+        }
+        f.pastaRemota = conf.pastaRemota;
+
+        if (retRemoto.map[f.nome] != null) {
+          // console.log("Arquivo ja salvo:   ", f);
+          f.arquivoRemoto = retRemoto.map[f.nome];
+          const dateDiff = Math.abs(retRemoto.map[f.nome].dataModificacao.getTime() - f.dataModificacao.getTime());
+          if (retRemoto.map[f.nome].tamanho == f.tamanho && dateDiff < 2000) {
+            f.status = "SALVO REMOTO";
+          } else {
+            f.status = "CONFLITO";
+            f.dataModStr = DataUtils.formatarData(new Date(f.lastModified), "yyyyMMddHHmmss");
+            if (retRemoto.map[f.nome].tamanho != f.tamanho) {
+              f.statusExtra = "Tamanho diferente";
+            }
+            if (dateDiff < 2000) {
+              f.statusExtra = "Data mod diferente";
+            }
+          }
+          
+          f.info = info;
+          
+        } else {
+          f.status = "NÃO SALVO";
+        }
+        f.info = info;
+        f.tamanhoFmt = Utils.formatarBytes(f.tamanho);
+        f.arqOriginal = f;
+        arrFinal.push(fromObject(f));
+        // retLocal.map[f.name] = f;
+      }
+      // viewModel.set('items', new ObservableArray(arrFinal));
+    }
   }
+  viewModel.set('items', new ObservableArray(arrFinal));
 }
 
-export function info(args1, args2) {
+function info(args1, args2) {
   console.log("info: ", args1, args2);
   return "INFO";
 }
@@ -169,6 +257,28 @@ function permissao() {
   } catch (ex) {
     console.log(ex);
   }
+}
+
+function filtrar(lista, objFiltro) {
+  // const page = ctx.page;
+  // const viewModel = page.bindingContext;
+  // console.log("Filtrar: Inicio ");
+  var res = [];
+  for (let l of lista) {
+    let entrar = true;
+    const props = Object.keys(objFiltro);
+    for (const p of props) {
+      if (l[p] != objFiltro[p]) {
+        entrar = false;
+        break;
+      }
+    }
+    if (entrar) {
+      res.push(l);
+    }
+  }
+  // console.log("Filtrar: ", res.length);
+  return res;
 }
 
 function taskPeriodica() {
