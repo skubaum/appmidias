@@ -19,6 +19,7 @@
     height: 110px;
     border-radius: 55px;
     padding: 0;
+    margin-left: 10px;
     background-color: #007BFF; /* Cor original */
     color: white;
     font-size: 20px;
@@ -30,4 +31,8 @@
 
 .round-button:active {
     background-color: #FF0000; /* Cor ao ser pressionado */
+}
+
+.item-selected {
+    background-color: lightblue;
 }

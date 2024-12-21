@@ -1,12 +1,14 @@
-import { Observable, knownFolders, path, ObservableArray, fromObject, confirm } from '@nativescript/core';
-import { FtpClient } from 'nativescript-ftp-client';
-import { FileUtils, FtpUtils, Utils, DataUtils } from './utils';
+import { Observable, knownFolders, path, ObservableArray, fromObject, confirm, Dialogs } from '@nativescript/core';
+import { FileUtils } from './fileutils';
+import { FtpUtils } from './ftputils';
+import { Utils } from './utils';
+import { DataUtils } from './datautils';
 import { request } from "@nativescript-community/perms";
 import { BackgroundFetch } from 'nativescript-background-fetch';
 
 function getMessage(counter) {
   if (counter <= 0) {
-    return 'Hoorraaay! You unlocked the NativeScript clicker achievement!';
+    return 'Hoorraaay! You unlocked!';
   } else {
     return `${counter} taps left`;
   }
@@ -21,16 +23,45 @@ export function createViewModel() {
   viewModel.items = new ObservableArray([]);
   viewModel.qtdSalvos = "Salvos";
   viewModel.qtdNaoSalvos = "Não salvos";
+  viewModel.abaSelecionada = 0;
+  viewModel.selecionados = [];
+  viewModel.abasBotoes = () => {
+    return ['EXCLUIR LOCAL', 'ENVIAR SELECIONADOS', 'EXCLUIR REMOTO'][viewModel.abaSelecionada];
+  };
 
-  viewModel.onTap = () => {
+  viewModel.onTap = async () => {
     viewModel.counter--;
     viewModel.set('message', getMessage(viewModel.counter));
     viewModel.set('qtdSalvos', "Salvos: 21");
-    viewModel.set('qtdNaoSalvos', "Não salvos: 300");
+    viewModel.set('qtdNaoSalvos', "Não salvos: 300 ");
 
     // log the message to the console  
-    console.log(getMessage(viewModel.counter));
-	  console.log("adada12");
+    // console.log(FileUtils.listarPastaLocal()) ;
+    // console.log(viewModel.items._array[0]);
+    // viewModel.items._array[0].selecionado = true;
+    // viewModel.items._array[1].selecionado = true;
+    let cont = 1000;
+    viewModel.items.forEach((item) => {
+      const abas = ["SALVO REMOTO", "NÃO SALVO", "CONFLITO"];
+      if (item.status == abas[viewModel.abaSelecionada]) {
+        cont--;
+        if (cont > 0) {
+          item.selecionado = !item.selecionado;
+          if (item.selecionado) {
+            if (viewModel.selecionados.indexOf(item) < 0) {
+              viewModel.selecionados.push(item);
+            }
+          } else {
+            const subIndex = viewModel.selecionados.indexOf(item);
+            if (subIndex >= 0) {
+              viewModel.selecionados.splice(subIndex, 1);
+            }
+          }
+        }
+      }
+    });
+    // viewModel.items.notifyChange();
+    viewModel.notifyPropertyChange("itens", []);
   };
 
   viewModel.onFtp = async () => {
@@ -50,6 +81,9 @@ export function createViewModel() {
   viewModel.onInfo = onInfo;
   viewModel.onTask = configureBackgroundFetch;
   viewModel.filtrar = filtrar;
+  viewModel.onBotaoAbas = onBotaoAbas;
+  viewModel.onSelecionado = onSelecionado;
+
   viewModel.contar = (lista, objFiltro, titulo) => {
     const val = filtrar(lista, objFiltro);
     if (lista.length == 0) {
@@ -64,10 +98,83 @@ export function createViewModel() {
     onEnviar(args);
   }
 
+  viewModel.onItemTap = (args) => {
+
+    const index = args.index;
+    const item = this.items.getItem(index);
+
+    // Limpe a seleção anterior
+    this.items.forEach((itm) => itm.selecionado = false);
+
+    // Marque o item atual como selecionado
+    item.selecionado = true;
+
+    console.log(`Item selecionado: ${item.name}`);
+  }
+
   return viewModel;
 }
 
-async function onEnviar(args) {
+function onSelecionado(args) {
+  // O item da lista correspondente
+  const item = args.object.bindingContext;
+  if (args.value) {
+    viewModel.selecionados.push(item);
+  } else {
+    const pos = viewModel.selecionados.indexOf(item);
+    viewModel.selecionados.splice(pos, 1);
+  }
+  // console.log("onSelecionado:  ", viewModel.selecionados);
+}
+
+async function onBotaoAbas(args) {
+  let lista = [];
+  const abas = ["SALVO REMOTO", "NÃO SALVO", "CONFLITO"];
+  const abasMess = ["Excluido", "Enviado", "Excluido"];
+  const abasFunc = [onExcluir, onEnviar, onExcluirRemoto];
+  for (const ii of viewModel.selecionados) {
+    if (ii.status == abas[viewModel.abaSelecionada]) {
+      lista.push(ii);
+    }
+  }
+  console.log(lista);
+  let confirmar = false;
+  await confirm({
+    title: "Confirmação",
+    message: "Você tem certeza que deseja continuar?",
+    okButtonText: "Sim",
+    cancelButtonText: "Não",
+  }).then((result) => {
+    confirmar = result;
+  });
+
+  if (confirmar) {
+    viewModel.set('message', abasMess[viewModel.abaSelecionada] + ` 0 de ${lista.length} arquivos`);
+    let cont = 0;
+    for (let item of lista) {
+      let subArgs = {object: {}};
+      subArgs.object.page = args.object.page;
+      subArgs.object.bindingContext = item;
+      subArgs.item = item;
+      await abasFunc[viewModel.abaSelecionada](subArgs);
+      
+      const subIndex = viewModel.selecionados.indexOf(item);
+      viewModel.selecionados.splice(subIndex, 1);
+      item.selecionado = false;
+
+      viewModel.set('message', abasMess[viewModel.abaSelecionada] + ` ${++cont} de ${lista.length} arquivos`);
+    }
+    for (let item of lista) {
+      // item.selecionado = false;
+      // console.log("False: ", item);
+    }
+    viewModel.set('message', "Concluido");
+  } else {
+    console.log("Cancelado ");
+  }
+}
+
+function enviarFalso(args) {
   const page = args.object.page;
   const viewModel = page.bindingContext;
 
@@ -76,25 +183,24 @@ async function onEnviar(args) {
 
   // Obter o índice do item
   const index = viewModel.items.indexOf(item);
+  console.log("Enviando: ", index);
+}
 
-  // viewModel.items[index].set("status", "Copiando...");
-  // viewModel.items[index].status = "Copiando...";
+async function onEnviar(args) {
+  let item = args.item;
+  if (args.item == null) {
+    const page = args.object.page;
+    const viewModel = page.bindingContext;
+    item = args.object.bindingContext;
+  }
+
   item.status = "Copiando...";
-  console.log("AQUI:  ", viewModel.items);
-  // viewModel.items.notifyChange();
-  console.log("Enviar pressionado no item: ", index, item);
-
   const ret = await FtpUtils.copiarArquivo({arquivo: item.arqOriginal, pastaDestino: item.pastaRemota});
   if (ret.codRet == 1) {
-    // viewModel.set('message', "Copiou com Sucesso");
-    // viewModel.items[index].set("status", "Copiou com Sucesso");
-    // viewModel.items[index].status = "Copiou com Sucesso";
     item.status = "SALVO REMOTO";
     console.log('Sucesso:  ', "Copiou com Sucesso");
   } else {
     viewModel.set('message', "Deu erro: " + ret.error);
-    // viewModel.items[index].set("status", "Deu erro: " + ret.error);
-    // viewModel.items[index].status = "Deu erro: " + ret.error;
     console.log('Erro: ', ret.error);
     item.status = "NÃO SALVO";
   }
@@ -107,18 +213,22 @@ function onExcluir(args) {
   const item = args.object.bindingContext;
   const index = viewModel.items.indexOf(item);
 
-  confirm({
-    title: "Confirmação",
-    message: "Você tem certeza que deseja excluir?",
-    okButtonText: "Sim",
-    cancelButtonText: "Não",
-  }).then((result) => {
-      if (result) {
-          console.log("Ação confirmada: ", index);
-      } else {
-          console.log("Ação cancelada: ", index);
-      }
-  });
+  if (args.semConfirmacao) {
+    console.log("Excluindo: ", index);
+  } else {
+    confirm({
+      title: "Confirmação",
+      message: "Você tem certeza que deseja excluir?",
+      okButtonText: "Sim",
+      cancelButtonText: "Não",
+    }).then((result) => {
+        if (result) {
+            console.log("Ação confirmada: ", index);
+        } else {
+            console.log("Ação cancelada: ", index);
+        }
+    });
+  }
 }
 
 async function onExcluirRemoto(args) {
@@ -158,22 +268,37 @@ function onInfo(args) {
   const index = viewModel.items.indexOf(item);
 
   console.log(item);
+
+  Dialogs.alert({
+    title: 'Erro',
+    message: JSON.stringify(item.statusExtra),
+    okButtonText: 'OK',
+    cancelable: true,
+  });
 }
 
 async function onListar(param, p2) {
   console.log("onListar: ", param, p2);
-  const configAll = [
-    {pastaRemota: "Arquivos/Fotos/CelularDaniel", pastaLocal: "DCIM/Camera", tipos: ["jpg"]},
-    {pastaRemota: "Arquivos/Videos/CelularDaniel", pastaLocal: "DCIM/Camera", tipos: ["mp4"]}
-  ];
-  const configAll1 = [
-    {pastaRemota: "Arquivos/Testes", pastaLocal: "DCIM/Camera", tipos: ["jpg"]}
-  ];
+  const arqConf = await FtpUtils.baixarArquivo({arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt")});
+  if (arqConf.codRet != 1) {
+    Dialogs.alert({
+      title: 'Erro',
+      message: arqConf.error,
+      okButtonText: 'OK',
+      cancelable: true,
+    });
+    console.log(arqConf);
+    return;
+  }
+  const configAll = JSON.parse(Utils.fixJSON(arqConf.resultado));
+  let confDevice = configAll[Utils.getDeviceId()];
   var arrFinal = [];
-  for (let conf of configAll) {
+  for (let conf of confDevice.confs) {
     if (conf.tipos == null) {
       conf.tipos = [];
     }
+    
+    //FAZENDO OS DADOS REMOTOS
     let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: conf.pastaRemota});
     retRemoto.map = {};
     if (retRemoto.codRet == 1) {
@@ -186,34 +311,42 @@ async function onListar(param, p2) {
       return;
     }
 
-    var retLocal = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal});
+    //FAZENDO OS DADOS LOCAIS
+    var retLocalPastas = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["pasta"]});
+    console.log("Pastas: ", retLocalPastas.resultado);
+    var retLocal = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["arquivo"]});
     if (retLocal.codRet == 1) {
       console.log("Qtd arquivos: ", retLocal.resultado.length);
       
       for (let f of retLocal.resultado) {
         if (conf.tipos.length > 0) {
-          if (!conf.tipos.includes(f._extension.substr(1))) {
-            //console.log("tipo nao aceito: ", f._extension.substr(1), f, conf);
+          try {
+            conf.tipos.includes(f._extension.substr(1));
+          } catch(ex) {
+            console.log(f);
+          }
+          if (f._extension != null && !conf.tipos.includes(f._extension.substr(1))) {
             continue;
           }
         }
         f.pastaRemota = conf.pastaRemota;
+        f.selecionado = false;
 
         if (retRemoto.map[f.nome] != null) {
           // console.log("Arquivo ja salvo:   ", f);
           f.arquivoRemoto = retRemoto.map[f.nome];
+          f.statusExtra = [];
           const dateDiff = Math.abs(retRemoto.map[f.nome].dataModificacao.getTime() - f.dataModificacao.getTime());
-          if (retRemoto.map[f.nome].tamanho == f.tamanho && dateDiff < 2000) {
+          if (retRemoto.map[f.nome].tamanho != f.tamanho) {
+            f.statusExtra.push(`Tamanho diferente: ${f.tamanho} -> ${retRemoto.map[f.nome].tamanho}`);
+          }
+          if (dateDiff > 2000) {
+            // f.statusExtra.push(`Data mod diferente: ${f.dataModificacaoStr} -> ${retRemoto.map[f.nome].dataModificacaoStr}`);
+          }
+          if (f.statusExtra.length == 0) {
             f.status = "SALVO REMOTO";
           } else {
             f.status = "CONFLITO";
-            f.dataModStr = DataUtils.formatarData(new Date(f.lastModified), "yyyyMMddHHmmss");
-            if (retRemoto.map[f.nome].tamanho != f.tamanho) {
-              f.statusExtra = "Tamanho diferente";
-            }
-            if (dateDiff < 2000) {
-              f.statusExtra = "Data mod diferente";
-            }
           }
           
           f.info = info;
