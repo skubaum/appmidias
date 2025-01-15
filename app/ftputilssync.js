@@ -1,4 +1,4 @@
-import { FtpClient } from 'nativescript-ftp-client';
+import { FtpClient } from './ftpclient';
 import { DataUtils } from './datautils';
 import { FileUtils } from './fileutils';
 import { ConectionUtils } from './connectionutils';
@@ -6,12 +6,15 @@ import { ConectionUtils } from './connectionutils';
 export class FtpUtils {
     static async contexto(param) {
         var client = new FtpClient();
+        console.log(client);
         const ip = ConectionUtils.buscarIp();
         let ftpIp = "192.168.101.165";
         if (!ip.startsWith("192.168.101")) {
             ftpIp = "192.168.0.146";
         }
+        console.log("Conetando: ", ftpIp);
         await client.connect(ftpIp);
+        console.log("Login: ", ftpIp);
         await client.login('daniel', 'a');
         return client;
     }
@@ -53,11 +56,7 @@ export class FtpUtils {
     static async copiarArquivo(param) {
         //console.log("copiarArquivo: ", param);
         try {
-            if (param.client != null) {
-                var client = param.client;
-            } else {
-                var client = await this.contexto();
-            }
+            var client = await this.contexto();
             await client.changeDirectory(param.pastaDestino);
             await client.upload(param.arquivo._path);
             const ddConv = new Date(param.arquivo.lastModified).toUTCString() + "-0300";
@@ -74,12 +73,14 @@ export class FtpUtils {
     }
 
     static async baixarArquivo(param) {
-        console.log("baixarArquivo: ", param);
+        console.log("baixarArquivo1: ", param);
         try {
             var client = await this.contexto();
             await client.download(param.arquivo, param.destino);
             var res = FileUtils.lerArquivo(param.destino);
+            console.log(res);
             client.disconnect();
+            console.log("Desconectou");
             return {codRet: 1, resultado: res};
         } catch (ex) {
             console.log(ex);

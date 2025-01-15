@@ -40,6 +40,11 @@ export function createViewModel() {
     viewModel.set('qtdSalvos', "Salvos: 21");
     viewModel.set('qtdNaoSalvos', "Não salvos: 300 ");
 
+    // log the message to the console  
+    // console.log(FileUtils.listarPastaLocal()) ;
+    // console.log(viewModel.items._array[0]);
+    // viewModel.items._array[0].selecionado = true;
+    // viewModel.items._array[1].selecionado = true;
     let cont = 1000;
     viewModel.items.forEach((item) => {
       const abas = ["SALVO REMOTO", "NÃO SALVO", "CONFLITO"];
@@ -83,9 +88,6 @@ export function createViewModel() {
   viewModel.filtrar = filtrar;
   viewModel.onBotaoAbas = onBotaoAbas;
   viewModel.onSelecionado = onSelecionado;
-  viewModel.onTestes = onTestes;
-  viewModel.onTestes2 = onTestes2;
-  viewModel.onCancelar = onCancelar;
 
   viewModel.contar = (lista, objFiltro, titulo) => {
     const val = filtrar(lista, objFiltro);
@@ -94,6 +96,12 @@ export function createViewModel() {
     }
     return `${titulo} - ${val.length}`;
   };
+
+  viewModel.onCancelar = (args) => {
+
+    console.log("onCancelar");
+    onEnviar(args);
+  }
 
   viewModel.onItemTap = (args) => {
 
@@ -112,71 +120,28 @@ export function createViewModel() {
   return viewModel;
 }
 
-/** ##########FUNCOES####### */
-
 function onSelecionado(args) {
   // O item da lista correspondente
-  
   const item = args.object.bindingContext;
-  // console.log("onSelecionado:Mudou: ", item.nome, args.value);
-  item.selecionado = args.value;
   if (args.value) {
-    const pos = viewModel.selecionados.indexOf(item);
-    if (pos < 0) {
-      viewModel.selecionados.push(item);
-    }
+    viewModel.selecionados.push(item);
   } else {
     const pos = viewModel.selecionados.indexOf(item);
-    // console.log("onSelecionado:Removendo: ", item.nome, pos);
-    if (pos >= 0) {
-      viewModel.selecionados.splice(pos, 1);
-    } else {
-      // console.log("onSelecionado:NaoRemove: ", item.nome, pos);
-    }
+    viewModel.selecionados.splice(pos, 1);
   }
-}
-
-function onTestes() {
-  console.log("onTestes1", viewModel.selecionados);
-  if (viewModel.selecionados[0] != null) {
-    viewModel.selecionados[0].status = "CONFLITO";
-    viewModel.selecionados[0].selecionado = false;
-    console.log("onTestes2");
-    // console.log(viewModel.selecionados[0]);
-    // viewModel.selecionados[0].status = "SALVO REMOTO";
-    console.log("onTestes3");
-    //viewModel.selecionados.splice(1, 1);
-    console.log("onTestes4");
-    viewModel.notifyPropertyChange("itens", []);
-    console.log("onTestes5");
-  }
-}
-
-function onTestes2() {
-  for (let i of viewModel.selecionados) {
-    console.log("onTestes2:i: ", i.nome);
-  }
-}
-
-function onCancelar() {
-  viewModel.executando = false;
+  // console.log("onSelecionado:  ", viewModel.selecionados);
 }
 
 async function onBotaoAbas(args) {
-  if (viewModel.executando) {
-    viewModel.executando = false;
-    return;
-  }
   let lista = [];
   const abas = ["SALVO REMOTO", "NÃO SALVO", "CONFLITO"];
   const abasMess = ["Excluido", "Enviado", "Excluido"];
-  const abasFunc = [onExcluir, onEnviar, onExcluirRemoto];
+  const abasFunc = [onExcluir, onStartLongTask, onExcluirRemoto];
   for (const ii of viewModel.selecionados) {
     if (ii.status == abas[viewModel.abaSelecionada]) {
       lista.push(ii);
     }
   }
-  console.log(lista);
   let confirmar = false;
   await confirm({
     title: "Confirmação",
@@ -190,30 +155,35 @@ async function onBotaoAbas(args) {
   if (confirmar) {
     viewModel.executando = true;
     viewModel.set('message', abasMess[viewModel.abaSelecionada] + ` 0 de ${lista.length} arquivos`);
-    let cont = 0;
-    let abaSelecionadaCongelada = viewModel.abaSelecionada;//congelando a aba selecionada, pois a interface fica livre para mexer
-    for (let item of lista) {
-      if (viewModel.executando) {
-        let subArgs = {object: {}};
-        subArgs.object.page = args.object.page;
-        subArgs.object.bindingContext = item;
-        subArgs.item = item;
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        await abasFunc[abaSelecionadaCongelada](subArgs);
-        
-        //const subIndex = viewModel.selecionados.indexOf(item);
-        // console.log(viewModel.selecionados);
-        //viewModel.selecionados.splice(subIndex, 1);
-        item.selecionado = false;
-
-        viewModel.set('message', abasMess[viewModel.abaSelecionada] + ` ${++cont} de ${lista.length} arquivos`);
-      }
-    }
-    viewModel.executando = false;
-    viewModel.set('message', "Concluido");
+    abasFunc[viewModel.abaSelecionada]({funcao: abas[viewModel.abaSelecionada], dados: lista});
   } else {
     console.log("Cancelado ");
   }
+}
+
+function onStartLongTask(args) {
+  const worker = new Worker("./tarefas"); // Caminho do Worker
+
+  worker.onmessage = function (msg) {
+      console.log("recebendo mensagem: ", msg);
+      if (msg.tipo == "terminar") {
+        args.sucesso(msg);
+        worker.terminate(); // Finaliza o Worker após o uso
+      }
+
+      if (msg.tipo == "atualizar") {
+        args.atualizar(msg);
+      }
+  };
+
+  worker.onerror = function (err) {
+      args.erro(msg);
+      worker.terminate();
+  };
+
+  console.log("Iniciando o Worker...", worker);
+  worker.postMessage(args.rotina); // Envia dados para o Worker
+  console.log("Iniciado5 o Worker...");
 }
 
 async function onEnviar(args) {
@@ -224,8 +194,53 @@ async function onEnviar(args) {
     item = args.object.bindingContext;
   }
 
+  let paramWorker = {};
+  paramWorker.sucesso = function(msg) {
+    if (msg.ret.codRet == 1) {
+      item.status = "SALVO REMOTO";
+      console.log('Sucesso:  ', "Copiou com Sucesso");
+    } else {
+      viewModel.set('message', "Deu erro: " + msg.ret.error);
+      console.log('Erro: ', msg.ret.error);
+      item.status = "NÃO SALVO";
+    }
+    viewModel.notifyPropertyChange("itens", []);
+  }
+
+  paramWorker.atualizar = function(msg) {
+    console.log("onEnviar.atualizar: ", msg);
+  }
+
+  paramWorker.erro = function(msg) {
+    viewModel.set('message', "Deu erro: " + msg.error);
+    console.log('Erro: ', msg.error);
+    item.status = "NÃO SALVO";
+  }
+
+  console.log(item.arqOriginal);
+  const arquivo = {_path: item.arqOriginal._path, nome: item.arqOriginal.nome, lastModified: item.arqOriginal.lastModified};
+
+  let dados = {arquivo: arquivo, pastaDestino: item.pastaRemota};
+  const client = await FtpUtils.contexto();
+  dados.client = client;
+  paramWorker.rotina = {funcao: "enviar", dados: dados};
+  
   item.status = "Copiando...";
-  const ret = await FtpUtils.copiarArquivo({arquivo: item.arqOriginal, pastaDestino: item.pastaRemota});
+  onStartLongTask(paramWorker);
+}
+
+
+async function onEnviarAntes(args) {
+  let item = args.item;
+  if (args.item == null) {
+    const page = args.object.page;
+    const viewModel = page.bindingContext;
+    item = args.object.bindingContext;
+  }
+
+  item.status = "Copiando...";
+  const arquivo = {_path: item.arqOriginal._path, nome: item.arqOriginal.nome, lastModified: item.arqOriginal.lastModified};
+  const ret = await FtpUtils.copiarArquivo({arquivo: arquivo, pastaDestino: item.pastaRemota});
   if (ret.codRet == 1) {
     item.status = "SALVO REMOTO";
     console.log('Sucesso:  ', "Copiou com Sucesso");

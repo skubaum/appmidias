@@ -1,3 +1,4 @@
+// import { createViewModel } from './main-view-model-worker';
 import { createViewModel } from './main-view-model';
 
 export function onNavigatingTo(args) {
