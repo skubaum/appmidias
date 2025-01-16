@@ -1,9 +1,10 @@
 <Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" loaded="onPageLoaded">
     <ActionBar title="Ftp-Basico" icon="" />
     <StackLayout class="p-4">
-        <Button text="TAP" tap="{{ onTap }}" class="-primary" />
+        <Button text="SELECIONAR LOTE" tap="{{ onTap }}" class="-primary" />
 		<Button text="{{ abasBotoes() }}" tap="{{ onBotaoAbas }}" class="-primary" />
         <Button text="Listar" tap="{{ onListar }}" class="-primary" />
+        <Button text="Testes" tap="{{ onTestes }}" class="-primary" />
         <Label text="{{ message }}" class="text-lg text-center text-gray-400" textWrap="true" />
 		<TabView selectedIndex="{{ abaSelecionada }}">
 			<TabViewItem title="{{ contar(items, {status: 'SALVO REMOTO'}, 'Salvos') }}">

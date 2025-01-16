@@ -84,7 +84,6 @@ export function createViewModel() {
   viewModel.onBotaoAbas = onBotaoAbas;
   viewModel.onSelecionado = onSelecionado;
   viewModel.onTestes = onTestes;
-  viewModel.onTestes2 = onTestes2;
   viewModel.onCancelar = onCancelar;
 
   viewModel.contar = (lista, objFiltro, titulo) => {
@@ -137,25 +136,11 @@ function onSelecionado(args) {
 }
 
 function onTestes() {
-  console.log("onTestes1", viewModel.selecionados);
-  if (viewModel.selecionados[0] != null) {
-    viewModel.selecionados[0].status = "CONFLITO";
-    viewModel.selecionados[0].selecionado = false;
-    console.log("onTestes2");
-    // console.log(viewModel.selecionados[0]);
-    // viewModel.selecionados[0].status = "SALVO REMOTO";
-    console.log("onTestes3");
-    //viewModel.selecionados.splice(1, 1);
-    console.log("onTestes4");
-    viewModel.notifyPropertyChange("itens", []);
-    console.log("onTestes5");
-  }
-}
-
-function onTestes2() {
-  for (let i of viewModel.selecionados) {
-    console.log("onTestes2:i: ", i.nome);
-  }
+  // FileUtils.requestReadContacts().then(
+  //   (result) => {console.log(result);},
+  //   (error) => {console.log(error);}
+  // ); 
+  FileUtils.permissoes();
 }
 
 function onCancelar() {
@@ -198,6 +183,7 @@ async function onBotaoAbas(args) {
         subArgs.object.page = args.object.page;
         subArgs.object.bindingContext = item;
         subArgs.item = item;
+        subArgs.semConfirmacao = true;
         await new Promise((resolve) => setTimeout(resolve, 0));
         await abasFunc[abaSelecionadaCongelada](subArgs);
         
@@ -237,27 +223,35 @@ async function onEnviar(args) {
   viewModel.notifyPropertyChange("itens", []);
 }
 
-function onExcluir(args) {
+async function onExcluir(args) {
   const page = args.object.page;
   const viewModel = page.bindingContext;
   const item = args.object.bindingContext;
   const index = viewModel.items.indexOf(item);
 
+  let confirmar = false;
   if (args.semConfirmacao) {
-    console.log("Excluindo: ", index);
+    confirmar = true;
   } else {
-    confirm({
+    await confirm({
       title: "Confirmação",
       message: "Você tem certeza que deseja excluir?",
       okButtonText: "Sim",
       cancelButtonText: "Não",
     }).then((result) => {
-        if (result) {
-            console.log("Ação confirmada: ", index);
-        } else {
-            console.log("Ação cancelada: ", index);
-        }
+      confirmar = result;
     });
+  }
+
+  if (confirmar) {
+    console.log("Ação confirmada:  " , index, item);
+    let res = FileUtils.excluirArquivo(item);
+    if (res.cod == 1) {
+      viewModel.items.splice(index, 1);
+      viewModel.notifyPropertyChange("itens", []);
+    }
+  } else {
+      console.log("Ação cancelada: ", index);
   }
 }
 

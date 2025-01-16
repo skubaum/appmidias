@@ -8,7 +8,8 @@
     "@nativescript/core": "~8.8.0",
     "nativescript-app-environment": "^1.0.0",
     "nativescript-background-fetch": "^1.2.1",
-    "nativescript-ftp-client": "^1.0.2"
+    "nativescript-ftp-client": "^1.0.2",
+    "ns-permissions": "^2.0.1"
   },
   "devDependencies": {
     "@nativescript/android": "8.8.6",

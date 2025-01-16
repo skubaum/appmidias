@@ -1,0 +1,31 @@
+1. Comando para dar permissões
+adb shell pm grant org.homesync.app android.permission.MANAGE_EXTERNAL_STORAGE
+
+2. Comando para analisar o app
+adb shell dumpsys package org.homesync.app
+
+3. Comando para testar o acesso aos arquivos[1]:
+adb shell appops set --uid org.homesync.app MANAGE_EXTERNAL_STORAGE allow
+
+4. Listar as permissões do app
+adb shell appops get --uid org.homesync.app
+
+5. Desfaz o comando 3
+adb shell appops set --uid org.homesync.app MANAGE_EXTERNAL_STORAGE default
+
+6. Listar todos os pacotes instalados pelo adb:
+adb shell pm list packages
+
+7. Manual de como usar o MANAGE_EXTERNAL_STORAGE [1]
+
+8. Usando o framework framework de acesso ao armazenamento, que é a solução do Ftp Server, pois ele busca uma pasta e dá permissão total nessa pasta, sem precisar de mais permissão. [2]
+
+9. Usando as permissões READ_MEDIA_IMAGES e READ_MEDIA_VIDEO [3]
+
+10. Para usar o MANAGE_EXTERNAL_STORAGE devemos usar é o ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION [4]
+
+LINKS:
+[1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
+[2] https://developer.android.com/training/data-storage/shared/documents-files?hl=pt-br#java
+[3] https://developer.android.com/training/data-storage/shared/media?hl=pt-br#java
+[4] https://stackoverflow.com/questions/65876736/how-do-you-request-manage-external-storage-permission-in-android
