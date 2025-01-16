@@ -395,27 +395,6 @@ function info(args1, args2) {
   return "INFO";
 }
 
-function permissao() {
-  try {
-    // const intent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-    // const context = android.content.Context(this);
-    // console.log(JSON.stringify(context));
-    // const uri = android.net.Uri.parse("package:org.homesync.app");// + context.getPackageName());
-    // intent.setData(uri);
-    // context.startActivity(intent);
-    request("storage").then((result) => {
-      if (result) {
-          console.log("Permissão concedida.");
-          FileUtils.listCameraFiles(); // Sua função para listar os arquivos
-      } else {
-          console.log("Permissão negada.");
-      }
-    });
-  } catch (ex) {
-    console.log(ex);
-  }
-}
-
 function filtrar(lista, objFiltro) {
   // const page = ctx.page;
   // const viewModel = page.bindingContext;
