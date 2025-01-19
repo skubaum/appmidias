@@ -1,11 +1,11 @@
 <Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" loaded="onPageLoaded">
-    <ActionBar title="Ftp-Basico" icon="" />
+    <ActionBar title="Ftp-Sync" icon="" />
     <StackLayout class="p-4">
         <Button text="SELECIONAR LOTE" tap="{{ onTap }}" class="-primary" />
 		<Button text="{{ abasBotoes() }}" tap="{{ onBotaoAbas }}" class="-primary" />
         <Button text="Listar" tap="{{ onListar }}" class="-primary" />
         <Button text="Testes" tap="{{ onTestes }}" class="-primary" />
-        <Label text="{{ message }}" class="text-lg text-center text-gray-400" textWrap="true" />
+        <Label text="{{ message }}" class="text-sm text-center text-gray-400" textWrap="true" />
 		<TabView selectedIndex="{{ abaSelecionada }}">
 			<TabViewItem title="{{ contar(items, {status: 'SALVO REMOTO'}, 'Salvos') }}">
 				<ListView items="{{ filtrar(items, {status: 'SALVO REMOTO'}) }}">
@@ -37,7 +37,7 @@
 								<Label col="1" text="{{ nome }}" textWrap="true" />
 								<Label col="2" text="{{ tamanhoFmt }}" />
 							</GridLayout>
-							<Label row="1" text="{{ dataModificacaoStr }}" />
+							<Label row="1" text="{{ dataModificacaoStr }}"/>
 							<GridLayout row="2" columns="*, auto, auto">
 								<Label col="0" text="{{ status }}" />
 								<Button col="1" class="fas round-button" text="&#xf144;" tap="{{ $parents['ListView'].onEnviar }}"/>

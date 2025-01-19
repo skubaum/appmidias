@@ -12,8 +12,11 @@ export class FileUtils {
       return folder._path;
     }
 
-    static lerArquivo(caminho) {
-        this.permissoes();
+    static lerArquivo(caminho, isLocal) {
+        isLocal ??= false;
+        if (!isLocal) {
+            this.permissoes();
+        }
         const file = File.fromPath(caminho);
         return file.readTextSync();
     }
@@ -61,14 +64,15 @@ export class FileUtils {
             param.pasta ??= "";
             param.grupos ??= ["pasta", "arquivo"];
 
-            const externalStorage = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-            const cameraPath = path.join(externalStorage, param.pasta);
-            const cameraFolder = Folder.fromPath(cameraPath);
-            console.log("cameraFolder: ", cameraFolder);
+            // const externalStorage = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+            // const cameraPath = path.join("storage/", param.pasta);
+            const cameraFolder = Folder.fromPath(param.pasta);
+            // console.log("cameraFolder: ", cameraFolder);
 
             //const cameraFolder2 = new java.io.File(cameraPath);
             //console.log("cameraFolder2: ", cameraFolder2.listFiles());
             // Liste os arquivos na pasta
+            // console.log("Existe: ", param.pasta, Folder.exists(param.pasta));
             const files = cameraFolder.getEntitiesSync(); // Retorna arquivos e subpastas
             let resultado = [];
             files.forEach((f) => {
@@ -160,6 +164,10 @@ export class FileUtils {
         });
     }
 
+    static temPermissao() {
+        return android.os.Environment.isExternalStorageManager();
+    }
+
     static perm() {
         if (android.os.Build.VERSION.SDK_INT >= 30) {
             if (!android.os.Environment.isExternalStorageManager()) {
@@ -171,6 +179,29 @@ export class FileUtils {
                     android.net.Uri.fromParts("package", packageName, null)
                 );
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                const res = intent.resolveActivity(Application.android.getNativeApplication().getApplicationContext().getPackageManager());
+                console.log(res);
+                if (res != null) {
+                    Application.android.getNativeApplication().getApplicationContext().startActivity(intent);
+                }
+            }
+        }
+    }
+
+    static perm1() {
+        console.log("Perm1");
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            if (!android.os.Environment.isExternalStorageManager()) {
+                const packageName = Application.android.getNativeApplication().getApplicationContext().getPackageName();
+                const intent = new android.content.Intent();
+                intent.setComponent(new android.content.ComponentName(
+                    "com.android.settings", 
+                    "com.android.settings.Settings$AutomaticStorageManagerSettingsActivity"
+                ));
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                const res = intent.resolveActivity(Application.android.getNativeApplication().getApplicationContext().getPackageManager());
+                console.log(res);
+                
                 Application.android.getNativeApplication().getApplicationContext().startActivity(intent);
             }
         }

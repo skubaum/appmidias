@@ -24,8 +24,11 @@ adb shell pm list packages
 
 10. Para usar o MANAGE_EXTERNAL_STORAGE devemos usar é o ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION [4]
 
+11. Fazer os icones de um App
+
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
 [2] https://developer.android.com/training/data-storage/shared/documents-files?hl=pt-br#java
 [3] https://developer.android.com/training/data-storage/shared/media?hl=pt-br#java
 [4] https://stackoverflow.com/questions/65876736/how-do-you-request-manage-external-storage-permission-in-android
+[5] https://assetstudio.androidpro.com.br/icons-launcher.html

@@ -21,14 +21,14 @@ export class FtpUtils {
         param ??= {};
         param.grupos ??= ["pasta", "arquivo"];
         param.pasta ??= "";
-        console.log("FtpUtils.listarArquivos: ", param);
+        // console.log("FtpUtils.listarArquivos: ", param);
         try {
             var client = await this.contexto();
             // console.log("FtpUtils.listarArquivos1: ", client);
             const pastaRef = 'Arquivos/Videos/CelularDaniel';
             await client.changeDirectory(param.pasta);
             var list = await client.list();
-            console.log("FtpUtils.listarArquivos2: ", list);
+            // console.log("FtpUtils.listarArquivos2: ", list);
             var pastas = [];
             for (let f of list) {
                 f.pastaPai = param.pasta;
@@ -42,7 +42,7 @@ export class FtpUtils {
                 }
             }
             client.disconnect();
-            console.log("FtpUtils.listarArquivos3: ");
+            // console.log("FtpUtils.listarArquivos3: ");
             return {codRet: 1, resultado: pastas};
         } catch (ex) {
             console.log(ex);
@@ -83,6 +83,7 @@ export class FtpUtils {
             return {codRet: 1, resultado: res};
         } catch (ex) {
             console.log(ex);
+            // throw ex;
             return {codRet: 0, error: JSON.stringify(ex)};
         }
     }

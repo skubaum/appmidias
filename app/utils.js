@@ -77,4 +77,30 @@ export class Utils {
     
       return badJSON;
     }
+
+    static telaAtiva() {
+        const context = Application.android.getNativeApplication().getApplicationContext();
+        const PowerManager = android.os.PowerManager;
+    
+        const powerManager = context.getSystemService(android.content.Context.POWER_SERVICE);
+        const wakeLock = powerManager.newWakeLock(
+            // PowerManager.PARTIAL_WAKE_LOCK,
+            PowerManager.FULL_WAKE_LOCK |
+            PowerManager.ACQUIRE_CAUSES_WAKEUP |
+            PowerManager.ON_AFTER_RELEASE,
+            "MyApp::WakeLock"
+        );
+    
+        // Adquirir o Wake Lock
+        wakeLock.acquire();
+        console.log("Travando tela");
+        return wakeLock;
+    }
+
+    static liberarTela(wakeLock) {
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+            console.log("Liberando tela");
+        }
+    }
 }
