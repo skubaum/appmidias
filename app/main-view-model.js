@@ -61,13 +61,12 @@ export function createViewModel() {
             attr: filtro.attr
           };
           FiltroUtils[filtro.tipo](filtroParam);
-          if (i < filtros.length - 1) {
-            entrada = saida;
-            saida = [];
-          }
+          entrada = saida;
+          viewModel.selecionados = saida;
+          saida = [];
         }
       }
-      viewModel.selecionados = saida;
+      // viewModel.selecionados = saida;
       for (let item of viewModel.selecionados) {
         item.selecionado = true;
       }
