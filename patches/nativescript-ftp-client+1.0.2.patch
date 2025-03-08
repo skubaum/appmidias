@@ -1,0 +1,80 @@
+diff --git a/node_modules/nativescript-ftp-client/ftp-client.android.d.ts b/node_modules/nativescript-ftp-client/ftp-client.android.d.ts
+index a2e194d..7acc1d2 100644
+--- a/node_modules/nativescript-ftp-client/ftp-client.android.d.ts
++++ b/node_modules/nativescript-ftp-client/ftp-client.android.d.ts
+@@ -15,4 +15,5 @@ export declare class FtpClient {
+     deleteFile(file: any): Promise<any>;
+     deleteDirectory(directory: any): Promise<any>;
+     createDirectory(directory: any): Promise<any>;
++	sendCustomCommand(comando: any): Promise<any>;
+ }
+diff --git a/node_modules/nativescript-ftp-client/ftp-client.android.js b/node_modules/nativescript-ftp-client/ftp-client.android.js
+index ec1e9af..5c70b40 100644
+--- a/node_modules/nativescript-ftp-client/ftp-client.android.js
++++ b/node_modules/nativescript-ftp-client/ftp-client.android.js
+@@ -216,6 +216,22 @@ var FtpClient = (function () {
+                 reject(error);
+             }
+         });
++    };
++	FtpClient.prototype.sendCustomCommand = function (comando) {
++        var me = this;
++        return new Promise(function (resolve, reject) {
++            try {
++                me.postMessage({
++                    method: 'sendCustomCommand',
++                    comando: comando,
++                    resolve: resolve,
++                    reject: reject
++                });
++            }
++            catch (error) {
++                reject(error);
++            }
++        });
+     };
+     return FtpClient;
+ }());
+diff --git a/node_modules/nativescript-ftp-client/ftp-worker-android.js b/node_modules/nativescript-ftp-client/ftp-worker-android.js
+index 34fd504..4300f37 100644
+--- a/node_modules/nativescript-ftp-client/ftp-worker-android.js
++++ b/node_modules/nativescript-ftp-client/ftp-worker-android.js
+@@ -51,9 +51,13 @@ var FtpWorker = (function () {
+         var fin = [];
+         for (var _i = 0, files_1 = files; _i < files_1.length; _i++) {
+             var file = files_1[_i];
++			//console.log("ftp-worker-android.js/list: ", file);
+             fin.push({
+                 type: (file.getType() == it.sauronsoftware.ftp4j.FTPFile.TYPE_DIRECTORY) ? 'directory' : 'file',
+-                name: file.getName()
++                name: file.getName(),
++				mdate: file.getModifiedDate().toString(),
++				file: file.toString(),
++				size: file.getSize()
+             });
+         }
+         return fin;
+@@ -78,6 +82,11 @@ var FtpWorker = (function () {
+     FtpWorker.prototype.createDirectory = function (data) {
+         var me = this;
+         return me.client.createDirectory(data.directory);
++    };
++	FtpWorker.prototype.sendCustomCommand = function (data) {
++        var me = this;
++		//console.log("sendCustomCommand: ", data.comando);
++        return me.client.sendCustomCommand(data.comando);
+     };
+     return FtpWorker;
+ }());
+diff --git a/node_modules/nativescript-ftp-client/index.d.ts b/node_modules/nativescript-ftp-client/index.d.ts
+index e781f2c..4fca091 100644
+--- a/node_modules/nativescript-ftp-client/index.d.ts
++++ b/node_modules/nativescript-ftp-client/index.d.ts
+@@ -23,4 +23,6 @@ export declare class FtpClient {
+     deleteDirectory(directory): Promise<any>
+ 
+     createDirectory(directory): Promise<any>
++	
++	sendCustomCommand(comando): Promise<any>
+ }
+\ No newline at end of file

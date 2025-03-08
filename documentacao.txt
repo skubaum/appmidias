@@ -28,7 +28,30 @@ adb shell pm list packages
 
 12. Trocando o icone adaptativo [6]
 - Mudar o formato do icone em: App_Resources\Android\src\main\res\drawable\ic_launcher_foreground.xml 
-- Mudar a cor do fundo em: App_Resources\Android\src\main\res\values\ic_launcher_background.xml 
+- Mudar a cor do fundo em: App_Resources\Android\src\main\res\values\ic_launcher_background.xml
+
+13. Criar projeto novo:
+	ns create meu-projeto-firestore --template @nativescript/template-blank
+	
+14. Usando o patch-package
+	A. Fazer o arquivo patch:
+		1. npm install patch-package --save-dev
+		2. criar a pasta patches
+		3. npx patch-package nome-do-pacote
+		4. Adicione postinstall ao package.json para aplicar os patches:
+		"scripts": {
+			"postinstall": "patch-package"
+		}
+		5. executar npx patch-package
+	B. Usar o patch em um projeto novo:
+		1. npm install patch-package --save-dev
+		2. criar a pasta patches
+		3. copiar o arquivo patch
+		4. Adicione postinstall ao package.json para aplicar os patches:
+		"scripts": {
+			"postinstall": "patch-package"
+		}
+		5. executar npx patch-package
 
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
