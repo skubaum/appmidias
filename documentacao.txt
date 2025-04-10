@@ -52,6 +52,14 @@ adb shell pm list packages
 			"postinstall": "patch-package"
 		}
 		5. executar npx patch-package
+		
+15. Como fazer o deploy para o celular:
+	1. Certificar que está na mesma rede do computador.
+	2. No modo desenvolvedor ativar depuração por wifi
+	3. Parear o dispositivo com um código de pareamento (vai aparecer o IP, a porta e o código)
+	4. adb pair ip:porta
+	5. config_ambiente.bat
+	6. ns debug android OU ns run android OU ns run android --bundle
 
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
