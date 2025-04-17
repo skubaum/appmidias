@@ -18,6 +18,9 @@
 	<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 	<application
 		android:name="com.tns.NativeScriptApplication"
@@ -60,6 +63,18 @@
             android:name="com.transistorsoft.tsbackgroundfetch.FetchJobService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
+		
+		<service android:name="org.homesync.myservice"
+			android:enabled="true"
+         	android:exported="true"
+			android:foregroundServiceType="dataSync" />
+
+		<receiver android:name="org.homesync.AlarmReceiver" android:exported="true">
+			<intent-filter>
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+				<action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+			</intent-filter>
+		</receiver>
 
         <receiver android:name="com.transistorsoft.tsbackgroundfetch.BootReceiver" android:exported="true">
             <intent-filter>

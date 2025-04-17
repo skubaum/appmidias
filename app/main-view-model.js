@@ -1,4 +1,4 @@
-import { Observable, knownFolders, path, ObservableArray, fromObject, confirm, Dialogs } from '@nativescript/core';
+import { Observable, knownFolders, path, ObservableArray, fromObject, confirm, Dialogs, ShowModalOptions, Application, Connectivity } from '@nativescript/core';
 import { FileUtils } from './fileutils';
 import { FtpUtils } from './ftputils';
 import { Utils } from './utils';
@@ -6,6 +6,8 @@ import { FiltroUtils } from './filtroutils';
 import { DataUtils } from './datautils';
 import { request } from "@nativescript-community/perms";
 import { BackgroundFetch } from 'nativescript-background-fetch';
+import * as application from "@nativescript/core/application";
+import { ConectionUtils } from './connectionutils';
 
 let viewModel;
 
@@ -90,6 +92,7 @@ export function createViewModel() {
   viewModel.onEnviar = onEnviar;
   viewModel.onListar = onListar;
   viewModel.onExcluir = onExcluir;
+  viewModel.onVisualizar = onVisualizar;
   viewModel.onExcluirRemoto = onExcluirRemoto;
   viewModel.onInfo = onInfo;
   viewModel.onTask = configureBackgroundFetch;
@@ -97,7 +100,12 @@ export function createViewModel() {
   viewModel.onBotaoAbas = onBotaoAbas;
   viewModel.onSelecionado = onSelecionado;
   viewModel.onTestes = onTestes;
+  viewModel.stopService = stopService;
+  viewModel.startService = startService;
+  viewModel.stopAlarme = stopAlarme;
+  viewModel.startAlarme = startAlarme;
   viewModel.onCancelar = onCancelar;
+  viewModel.permissaoExecutarFechado = permissaoExecutarFechado;
 
   viewModel.contar = (lista, objFiltro, titulo) => {
     const val = filtrar(lista, objFiltro);
@@ -148,16 +156,148 @@ function onSelecionado(args) {
   }
 }
 
-function onTestes() {
-  // FileUtils.requestReadContacts().then(
-  //   (result) => {console.log(result);},
-  //   (error) => {console.log(error);}
-  // ); 
-  // FileUtils.permissoes();
-  for (let item of viewModel.selecionados) {
-      console.log(item.nome, item.status, item.selecionado);
-  }
+function onTestes(args) {
+  // const context = application.android.context;
+  // const intent = new android.content.Intent(context, org.homesync.myservice.class);
+  // // context.startService(intent);
+  // context.startForegroundService(intent);
+  // console.log("Serviço iniciado");
+
+  // const context = application.android.context; // Obtém o contexto do Android
+  // const intent = new android.content.Intent(context, org.homesync.myservice.class); // Substitua pelo nome completo do seu serviço
+  // context.stopService(intent); // Para o serviço
+  // console.log("Serviço parado");
+  // console.log("Serviço online: ", ConectionUtils.servidorOnline());
+  // viewModel.set('message', "Servidor online: " + ConectionUtils.servidorOnline());
+  // let param = {nomeAntigo: "/Arquivos/Testes/b.pdf", nomeNovo: "/Arquivos/Testes/bb.pdf"};
+  // FtpUtils.renomearArquivo(param);
+
+  FtpUtils.tamanhoArquivo({arquivo: "Arquivos/Testes/bb.pdf"}).then((result) => { 
+  // FtpUtils.tamanhoArquivo({arquivo: "Arquivos/WhatsApp/vid/VID-20250311-WA0000.mp4"}).then((result) => { 
+    console.log("Tamanho: ", result);
+  });
+  // FtpUtils.excluirArquivo({arquivo: "Arquivos/WhatsApp/vid/VID-20250311-WA0000.mp4"}).then((result) => { 
+  //   console.log("Tamanho: ", result);
+  // });
 }
+
+function permissaoExecutarFechado(args) {
+  console.log("Nome do pacote: ", application.android.context.getPackageName());
+  const newIntent = new android.content.Intent(
+    android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+  );
+  application.android.foregroundActivity.startActivity(newIntent);
+
+  // const newIntent = new android.content.Intent(
+  //   android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+  //   android.net.Uri.parse("package:" + application.android.context.getPackageName())
+  // );
+  // application.android.foregroundActivity.startActivity(newIntent);
+}
+
+function startAlarme(args) {
+  const context = application.android.context;
+  const alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE);
+
+  const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.AlarmReceiver"));
+  const pendingIntent = android.app.PendingIntent.getBroadcast(
+      context,
+      0,
+      intent,
+      android.app.PendingIntent.FLAG_IMMUTABLE
+  );
+
+  const intervalMillis = 10 * 1000; // 10 minutos
+  const triggerAtMillis = java.lang.System.currentTimeMillis() + intervalMillis;
+
+  alarmManager.setRepeating(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      intervalMillis,
+      pendingIntent
+  );
+  console.log("⏳ Alarme configurado para cada 10 minutos");
+
+  //iniciando pela primeira vez o serviço, pois ele é incapaz de iniciar a primeira vez se estiver fechado
+  // const newIntent = new android.content.Intent(context, org.homesync.myservice.class);
+  // // context.startService(intent);
+  // context.startForegroundService(newIntent);
+}
+
+function stopAlarme() {
+  const context = application.android.context; // Obtém o contexto do Android
+  const alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE);
+
+  const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.AlarmReceiver"));
+  const pendingIntent = android.app.PendingIntent.getBroadcast(
+      context,
+      0,
+      intent,
+      android.app.PendingIntent.FLAG_IMMUTABLE
+  );
+
+  alarmManager.cancel(pendingIntent); // Cancela o alarme
+  console.log("⏳ Alarme cancelado");
+}
+
+function startService(args) {
+  const context = application.android.context;
+  const alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE);
+
+  const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.myservice"));
+  const pendingIntent = android.app.PendingIntent.getService(
+      context,
+      0,
+      intent,
+      android.app.PendingIntent.FLAG_IMMUTABLE
+  );
+
+  const intervalMillis = 3 * 1000 * 60; // 10 minutos
+  const triggerAtMillis = java.lang.System.currentTimeMillis() + 20 * 1000;
+
+  alarmManager.setRepeating(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      intervalMillis,
+      pendingIntent
+  );
+
+  // alarmManager.setExactAndAllowWhileIdle(
+  //   android.app.AlarmManager.RTC_WAKEUP,
+  //   triggerAtMillis,
+  //   pendingIntent
+  // );
+
+  console.log("⏳Alarme de Serviço configurado para cada 10 segundos");
+
+  //iniciando pela primeira vez o serviço, pois ele é incapaz de iniciar a primeira vez se estiver fechado
+  // const newIntent = new android.content.Intent(context, org.homesync.myservice.class);
+  // // context.startService(intent);
+  // context.startForegroundService(newIntent); 
+}
+
+function stopService() {
+  // const context = application.android.context; // Obtém o contexto do Android
+  // const intent = new android.content.Intent(context, org.homesync.myservice.class); // Substitua pelo nome completo do seu serviço
+  // context.stopService(intent); // Para o serviço
+  // console.log("Serviço parado");
+
+  const context = application.android.context; // Obtém o contexto do Android
+  const alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE);
+
+  const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.myservice"));
+  const pendingIntent = android.app.PendingIntent.getService(
+      context,
+      0,
+      intent,
+      android.app.PendingIntent.FLAG_IMMUTABLE
+  );
+
+  alarmManager.cancel(pendingIntent); // Cancela o alarme
+  console.log("⏳ Alarme de Serviço cancelado");
+}
+
+
 
 function onCancelar() {
   viewModel.executando = false;
@@ -338,6 +478,7 @@ async function onListar(param, p2) {
   let confDevice = configAll[Utils.getDeviceId()];
   if (confDevice == null) {
     viewModel.set('message', "O ID do dispositivo nao esta no arquivo de configuracao no servidor FTP.");
+    console.log("ID: ", Utils.getDeviceId());
     Utils.liberarTela(wakeLock);
     return;
   }
@@ -408,12 +549,12 @@ async function onListar(param, p2) {
             f.status = "CONFLITO";
           }
           
-          f.info = info;
+          // f.info = info;
           
         } else {
           f.status = "NÃO SALVO";
         }
-        f.info = info;
+        // f.info = info;
         f.tamanhoFmt = Utils.formatarBytes(f.tamanho);
         f.arqOriginal = f;
         arrFinal.push(fromObject(f));
@@ -425,6 +566,40 @@ async function onListar(param, p2) {
   viewModel.set('items', new ObservableArray(arrFinal));
   viewModel.set('message', "Listado com sucesso.");
   Utils.liberarTela(wakeLock);
+}
+
+function onVisualizar(args) {
+  const page = args.object.page;
+  const item = args.object.bindingContext; // Obtém o item associado ao botão
+
+  console.log(item);
+  const tipo = item._extension;
+  if (tipo === ".jpg") {
+      console.log(`Visualizando foto: ${item._path}`);
+      // const imageModule = require("tns-core-modules/ui/image");
+      //   const image = new imageModule.Image();
+      //   image.src = item.caminho;
+      page.showModal("image-modal", {
+        context: { imageUrl: item._path}, // ou path completo
+        fullscreen: true,
+        animated: true,
+        closeCallback: () => {
+          console.log("Modal fechado");
+        }
+      });
+  } else if (tipo === ".mp4") {
+      console.log(`Visualizando vídeo: ${item.caminho}`);
+      page.showModal("image-modal", {
+        context: { videoUrl: item._path}, // ou path completo
+        fullscreen: true,
+        animated: true,
+        closeCallback: () => {
+          console.log("Modal fechado");
+        }
+      });
+  } else {
+      console.warn("Tipo de arquivo desconhecido: ", item.tipo);
+  }
 }
 
 function info(args1, args2) {

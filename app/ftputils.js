@@ -58,6 +58,7 @@ export class FtpUtils {
             } else {
                 var client = await this.contexto();
             }
+            param.segura ??= false;
             await client.changeDirectory(param.pastaDestino);
             await client.upload(param.arquivo._path);
             const ddConv = new Date(param.arquivo.lastModified).toUTCString() + "-0300";
@@ -95,6 +96,35 @@ export class FtpUtils {
             await client.deleteFile(param.arquivo);
             client.disconnect();
             return {codRet: 1};
+        } catch (ex) {
+            console.log(ex);
+            return {codRet: 0, error: ex};
+        }
+    }
+
+    static async renomearArquivo(param) {
+        console.log("renomearArquivo: ", param);
+        try {
+            var client = await this.contexto();
+            await client.rename(param.nomeAntigo, param.nomeNovo);
+            client.disconnect();
+            return {codRet: 1};
+        } catch (ex) {
+            console.log(ex);
+            return {codRet: 0, error: ex};
+        }
+    }
+
+    static async tamanhoArquivo(param) {
+        console.log("tamanhoArquivo: ", param);
+        try {
+            var client = await this.contexto();
+            const comando = `SIZE ${param.arquivo}`;
+            //console.log("copiarArquivo: ", comando);
+            const rr = await client.fileSize(param.arquivo);
+            console.log(rr);
+            client.disconnect();
+            return {codRet: 1, tamanho: rr};
         } catch (ex) {
             console.log(ex);
             return {codRet: 0, error: ex};

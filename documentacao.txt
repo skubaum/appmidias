@@ -60,6 +60,18 @@ adb shell pm list packages
 	4. adb pair ip:porta
 	5. config_ambiente.bat
 	6. ns debug android OU ns run android OU ns run android --bundle
+	
+16. Como resolvi o problema de usar o extend. [7][8]
+
+17. Rodar um serviço em segundo plano. [9][10]
+
+18. Comando para descompactar um arquivo apk:
+	java -jar C:\Arquivos\Programas\gnuwin\apktool.jar d platforms/android/app/build/outputs/apk/debug/app-debug.apk -o decompiled-apk
+	
+19. Listar os serviços ativos:
+	adb shell dumpsys activity services org.homesync.app
+	
+20. Conseguir usar sockets na thread principal. [12]
 
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
@@ -68,3 +80,9 @@ LINKS:
 [4] https://stackoverflow.com/questions/65876736/how-do-you-request-manage-external-storage-permission-in-android
 [5] https://assetstudio.androidpro.com.br/icons-launcher.html
 [6] https://www.svgrepo.com/
+[7] https://stackoverflow.com/questions/60642749/nativescript-6-0-android-app-widget-not-working
+[8] https://docs.nativescript.org/guide/extending-classes-and-implementing-interfaces-android#extending-android-application
+[9] https://stackoverflow.com/questions/76943771/foreground-service-crashing-on-android-14
+[10] https://developer.android.com/about/versions/14/changes/fgs-types-required?hl=pt-br#data-sync
+[11] https://apktool.org/
+[12] https://github.com/nativescript-community/https/issues/25

@@ -1,10 +1,19 @@
 <Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" loaded="onPageLoaded">
-    <ActionBar title="Ftp-Sync" icon="" />
+    <ActionBar title="Ftp-Sync">
+        <!-- Ícones ou texto na direita -->
+        <ActionItem text="Testes" tap="{{ onTestes }}" ios.position="right" android.position="actionBar" />
+        
+        <!-- Mais opções via menu de overflow -->
+        <ActionItem text="Executar Fechado" tap="{{ permissaoExecutarFechado }}" ios.position="more" android.position="popup" />
+        <ActionItem text="Iniciar Alarme" tap="{{ startAlarme }}" ios.position="more" android.position="popup" />
+        <ActionItem text="Parar Alarme" tap="{{ stopAlarme }}" ios.position="more" android.position="popup" />
+        <ActionItem text="Iniciar Serviço" tap="{{ startService }}" ios.position="more" android.position="popup" />
+        <ActionItem text="Parar Serviço" tap="{{ stopService }}" ios.position="more" android.position="popup" />
+    </ActionBar>
     <StackLayout class="p-4">
         <Button text="SELECIONAR LOTE" tap="{{ onTap }}" class="-primary" />
 		<Button text="{{ abasBotoes() }}" tap="{{ onBotaoAbas }}" class="-primary" />
         <Button text="Listar" tap="{{ onListar }}" class="-primary" />
-        <Button text="Testes" tap="{{ onTestes }}" class="-primary" />
         <Label text="{{ message }}" class="text-sm text-center text-gray-400" textWrap="true" />
 		<TabView selectedIndex="{{ abaSelecionada }}">
 			<TabViewItem title="{{ contar(items, {status: 'SALVO REMOTO'}, 'Salvos') }}">
@@ -18,8 +27,9 @@
 								<Label col="2" text="{{ tamanhoFmt }}" />
 							</GridLayout>
 							<Label row="1" text="{{ dataModificacaoStr }}" />
-							<GridLayout row="2" columns="*, auto, auto">
+							<GridLayout row="2" columns="*, auto, auto, auto">
 								<Label col="0" text="{{ status }}" />
+								<Button col="3" class="fas round-button" text="&#xf03e;" tap="{{ $parents['ListView'].onVisualizar }}" />
 								<Button col="1" class="fas round-button" text="&#xf1f8;" tap="{{ $parents['ListView'].onExcluir }}" />
 								<Button col="2" class="fas round-button" text="&#xf05a;" tap="{{ $parents['ListView'].onInfo }}" />
 							</GridLayout>
@@ -38,8 +48,9 @@
 								<Label col="2" text="{{ tamanhoFmt }}" />
 							</GridLayout>
 							<Label row="1" text="{{ dataModificacaoStr }}"/>
-							<GridLayout row="2" columns="*, auto, auto">
+							<GridLayout row="2" columns="*, auto, auto, auto">
 								<Label col="0" text="{{ status }}" />
+								<Button col="3" class="fas round-button" text="&#xf03e;" tap="{{ $parents['ListView'].onVisualizar }}" />
 								<Button col="1" class="fas round-button" text="&#xf144;" tap="{{ $parents['ListView'].onEnviar }}"/>
 								<Button col="2" class="fas round-button" text="&#xf28d;" tap="{{ onItemTap }}"/>
 							</GridLayout>

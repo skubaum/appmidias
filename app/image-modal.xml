@@ -1,0 +1,15 @@
+<!-- image-modal.xml -->
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" xmlns:VideoPlayer="nativescript-videoplayer" shownModally="onShownModally">
+  <GridLayout rows="*, auto, *" columns="*" backgroundColor="#80000000" padding="20">
+    <Label row="0" text="{{ nome }}" textWrap="true" />
+    <Image row="1" src="{{ imageUrl }}" borderRadius="10" />
+    <VideoPlayer:Video
+            row="2"
+            src="{{ videoUrl }}"
+            stretch="aspectFit"
+            loaded="videoplayerLoaded" 
+            finished="videoFinished" 
+            autoplay="true"
+            height="100%"/>
+  </GridLayout>
+</Page>

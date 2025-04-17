@@ -20,6 +20,31 @@ export class ConectionUtils {
         }
     }
 
+    static burcarEnderecoServidor() {
+        let ftpIp = "192.168.101.165";
+        const ip = this.buscarIp();
+        if (!ip.startsWith("192.168.101")) {
+            ftpIp = "192.168.0.146";
+        }
+        return ftpIp;
+    }
+
+    static servidorOnline() {
+        try {
+            const host = ConectionUtils.burcarEnderecoServidor();
+            const timeout = 3000; // 5 segundos
+            const socket = new java.net.Socket();
+            const socketAddress = new java.net.InetSocketAddress(host, 21);
+            socket.connect(socketAddress, timeout);
+            socket.close();
+            return true;
+        } catch (err) {
+            console.log(err);
+            console.log("❌ Porta não está acessível:", err);
+            return false;
+        }
+    }
+
     static isWifi() {
         return Connectivity.getConnectionType() == 1;
     }
