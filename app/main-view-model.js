@@ -8,6 +8,7 @@ import { request } from "@nativescript-community/perms";
 import { BackgroundFetch } from 'nativescript-background-fetch';
 import * as application from "@nativescript/core/application";
 import { ConectionUtils } from './connectionutils';
+// import Sqlite from 'nativescript-sqlite';
 
 let viewModel;
 
@@ -156,7 +157,7 @@ function onSelecionado(args) {
   }
 }
 
-function onTestes(args) {
+async function onTestes(args) {
   // const context = application.android.context;
   // const intent = new android.content.Intent(context, org.homesync.myservice.class);
   // // context.startService(intent);
@@ -172,13 +173,30 @@ function onTestes(args) {
   // let param = {nomeAntigo: "/Arquivos/Testes/b.pdf", nomeNovo: "/Arquivos/Testes/bb.pdf"};
   // FtpUtils.renomearArquivo(param);
 
-  FtpUtils.tamanhoArquivo({arquivo: "Arquivos/Testes/bb.pdf"}).then((result) => { 
-  // FtpUtils.tamanhoArquivo({arquivo: "Arquivos/WhatsApp/vid/VID-20250311-WA0000.mp4"}).then((result) => { 
-    console.log("Tamanho: ", result);
-  });
+  // FtpUtils.tamanhoArquivo({arquivo: "Arquivos/Testes/bb.pdf"}).then((result) => { 
+  // // FtpUtils.tamanhoArquivo({arquivo: "Arquivos/WhatsApp/vid/VID-20250311-WA0000.mp4"}).then((result) => { 
+  //   console.log("Tamanho: ", result);
+  // });
   // FtpUtils.excluirArquivo({arquivo: "Arquivos/WhatsApp/vid/VID-20250311-WA0000.mp4"}).then((result) => { 
   //   console.log("Tamanho: ", result);
   // });
+  // const isAvailable = await Sqlite.exists('data.db');
+  // console.log(isAvailable);
+  // const database = await Sqlite.open('data.db');
+
+  const db = await Sqlite("data.db");
+  console.log("Are we open yet (Promise based)? ", db.isOpen() ? "Yes" : "No"); // Yes
+  // const database = await Sqlite.open('data.db');
+
+
+    // Cria a tabela se não existir
+    await db.execSQL(`
+        CREATE TABLE IF NOT EXISTS arquivos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT,
+            status TEXT
+        );
+    `);
 }
 
 function permissaoExecutarFechado(args) {
@@ -456,7 +474,7 @@ function onInfo(args) {
 }
 
 async function onListar(param, p2) {
-  console.log("onListar: ", param, p2);
+  // console.log("onListar: ", param, p2);
   viewModel.set('message', "Listando...");
   const wakeLock = Utils.telaAtiva();
   viewModel.set('items', new ObservableArray([]));

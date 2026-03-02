@@ -60,6 +60,7 @@ adb shell pm list packages
 	4. adb pair ip:porta
 	5. config_ambiente.bat
 	6. ns debug android OU ns run android OU ns run android --bundle
+	7. verificar se conectou: adb devices
 	
 16. Como resolvi o problema de usar o extend. [7][8]
 
@@ -72,6 +73,9 @@ adb shell pm list packages
 	adb shell dumpsys activity services org.homesync.app
 	
 20. Conseguir usar sockets na thread principal. [12]
+
+21. Como compilar apenas:
+	npx ns build android --env.verbose
 
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br

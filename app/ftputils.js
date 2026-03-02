@@ -78,6 +78,7 @@ export class FtpUtils {
         console.log("baixarArquivo: ", param);
         try {
             var client = await this.contexto();
+            console.log("baixarArquivo: ", client);
             await client.download(param.arquivo, param.destino);
             var res = FileUtils.lerArquivo(param.destino);
             client.disconnect();

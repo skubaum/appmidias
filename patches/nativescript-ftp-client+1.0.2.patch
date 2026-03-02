@@ -9,15 +9,29 @@ index a2e194d..7acc1d2 100644
 +	sendCustomCommand(comando: any): Promise<any>;
  }
 diff --git a/node_modules/nativescript-ftp-client/ftp-client.android.js b/node_modules/nativescript-ftp-client/ftp-client.android.js
-index ec1e9af..5c70b40 100644
+index ec1e9af..96bb279 100644
 --- a/node_modules/nativescript-ftp-client/ftp-client.android.js
 +++ b/node_modules/nativescript-ftp-client/ftp-client.android.js
-@@ -216,6 +216,22 @@ var FtpClient = (function () {
-                 reject(error);
+@@ -19,13 +19,7 @@ var FtpClient = (function () {
+         return new Promise(function (resolve, reject) {
+             try {
+                 me.worker;
+-                if (global.TNS_WEBPACK) {
+-                    var FtpWorker = require("nativescript-worker-loader!./ftp-worker-android.js");
+-                    me.worker = new FtpWorker();
+-                }
+-                else {
+-                    me.worker = new Worker('./ftp-worker-android.js');
+-                }
++                me.worker = new Worker('./ftp-worker-android.js');
+                 me.worker.onmessage = function (msg) {
+                     if (msg.data.uuid) {
+                         var obj = me.promises[msg.data.uuid];
+@@ -217,6 +211,38 @@ var FtpClient = (function () {
              }
          });
-+    };
-+	FtpClient.prototype.sendCustomCommand = function (comando) {
+     };
++    FtpClient.prototype.sendCustomCommand = function (comando) {
 +        var me = this;
 +        return new Promise(function (resolve, reject) {
 +            try {
@@ -32,11 +46,28 @@ index ec1e9af..5c70b40 100644
 +                reject(error);
 +            }
 +        });
-     };
++    };
++    FtpClient.prototype.fileSize = function (file) {
++        var me = this;
++        return new Promise(function (resolve, reject) {
++            try {
++                me.postMessage({
++                    method: 'fileSize',
++                    file: file,
++                    resolve: resolve,
++                    reject: reject
++                });
++            }
++            catch (error) {
++                reject(error);
++            }
++        });
++    };
      return FtpClient;
  }());
+ exports.FtpClient = FtpClient;
 diff --git a/node_modules/nativescript-ftp-client/ftp-worker-android.js b/node_modules/nativescript-ftp-client/ftp-worker-android.js
-index 34fd504..4300f37 100644
+index 34fd504..f60a3d9 100644
 --- a/node_modules/nativescript-ftp-client/ftp-worker-android.js
 +++ b/node_modules/nativescript-ftp-client/ftp-worker-android.js
 @@ -51,9 +51,13 @@ var FtpWorker = (function () {
@@ -54,10 +85,14 @@ index 34fd504..4300f37 100644
              });
          }
          return fin;
-@@ -78,6 +82,11 @@ var FtpWorker = (function () {
+@@ -78,6 +82,15 @@ var FtpWorker = (function () {
      FtpWorker.prototype.createDirectory = function (data) {
          var me = this;
          return me.client.createDirectory(data.directory);
++    };
++	FtpWorker.prototype.fileSize = function (data) {
++        var me = this;
++        return me.client.fileSize(data.file);
 +    };
 +	FtpWorker.prototype.sendCustomCommand = function (data) {
 +        var me = this;
@@ -67,14 +102,16 @@ index 34fd504..4300f37 100644
      return FtpWorker;
  }());
 diff --git a/node_modules/nativescript-ftp-client/index.d.ts b/node_modules/nativescript-ftp-client/index.d.ts
-index e781f2c..4fca091 100644
+index e781f2c..43d454c 100644
 --- a/node_modules/nativescript-ftp-client/index.d.ts
 +++ b/node_modules/nativescript-ftp-client/index.d.ts
-@@ -23,4 +23,6 @@ export declare class FtpClient {
+@@ -23,4 +23,8 @@ export declare class FtpClient {
      deleteDirectory(directory): Promise<any>
  
      createDirectory(directory): Promise<any>
 +	
 +	sendCustomCommand(comando): Promise<any>
++	
++	fileSize(): Promise<any>
  }
 \ No newline at end of file
