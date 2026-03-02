@@ -77,6 +77,12 @@ adb shell pm list packages
 21. Como compilar apenas:
 	npx ns build android --env.verbose
 
+22. Listar os serviços ativos:
+	adb shell ps | grep org.homesync.app
+
+23. Matar o serviço:
+	adb shell am force-stop org.homesync.app
+
 LINKS:
 [1] https://developer.android.com/training/data-storage/manage-all-files?hl=pt-br
 [2] https://developer.android.com/training/data-storage/shared/documents-files?hl=pt-br#java

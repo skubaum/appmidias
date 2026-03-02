@@ -9,5 +9,6 @@ android.content.BroadcastReceiver.extend("org.homesync.AlarmReceiver", {
         } else {
             context.startService(serviceIntent);
         }
+
     }
 });

@@ -6,6 +6,8 @@ import { FtpUtils } from './ftputils';
 import { Utils } from './utils';
 import { ConectionUtils } from './connectionutils';
 
+let isExecuting = false;
+
 export const myService = android.app.Service.extend("org.homesync.myservice", {
     onCreate: function () {
         console.log("Serviço criado");
@@ -13,6 +15,13 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
 
     onStartCommand: function (intent, flags, startId) {
         console.log("Serviço iniciado comando");
+
+        if (isExecuting) {
+            console.log("⚠️ Já existe uma sincronização em andamento. Execução sobreposta bloqueada.");
+            this.stopSelf();
+            return android.app.Service.START_NOT_STICKY;
+        }
+        isExecuting = true;
 
         const context = application.android.context;
         const channelId = "homesync_service_channel";
@@ -30,7 +39,7 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
         const builder = new android.app.Notification.Builder(context, channelId)
             .setContentTitle("HomeSync Ativo")
             .setContentText("O serviço está sendo executado em segundo plano.")
-            .setSmallIcon(android.R.drawable.ic_dialog_info) 
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             // .setSmallIcon(android.R.drawable.ic_popup_sync)
             .setOngoing(true);
 
@@ -42,11 +51,18 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
         } else {
             this.startForeground(1, notification);
         }
+        let wakeLock;
+        try {
+            wakeLock = Utils.cpuAtiva();
+        } catch (e) { console.log(e); }
+
         if (!ConectionUtils.isWifi()) {
             console.log("Rede não é Wifi. Não executando tarefa de sincronização.");
             // Coloque aqui a lógica do serviço
             setTimeout(() => {
                 console.log("✅ Tarefa concluída. Encerrando serviço.");
+                Utils.liberarCpu(wakeLock);
+                isExecuting = false;
                 this.stopSelf(); // <- Isso encerra o serviço
             }, 5000); // 5 segundos só como exemplo
             return android.app.Service.START_NOT_STICKY;
@@ -56,25 +72,29 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
             // Coloque aqui a lógica do serviço
             setTimeout(() => {
                 console.log("✅ Tarefa concluída. Encerrando serviço.");
+                Utils.liberarCpu(wakeLock);
+                isExecuting = false;
                 this.stopSelf(); // <- Isso encerra o serviço
             }, 5000); // 5 segundos só como exemplo
             return android.app.Service.START_NOT_STICKY;
         }
 
-        // Coloque aqui a lógica do serviço
-        // setTimeout(() => {
-        //     console.log("✅ Tarefa concluída. Encerrando serviço.");
-        //     this.stopSelf(); // <- Isso encerra o serviço
-        // }, 5000); // 5 segundos só como exemplo
+        // Executa a listagem aguardando ela terminar
+        this.processarListagem(wakeLock);
 
-        listar("param", "p2").then(async (arrFinal) => {
+        return android.app.Service.START_NOT_STICKY;
+    },
+
+    processarListagem: async function (wakeLock) {
+        try {
+            const arrFinal = await listar("param", "p2");
             let contador = 20;
             try {
                 for (let f of arrFinal) {
                     if (f.status == "NÃO SALVO") {
                         console.log("Enviando Arquivo: ", f.nome, f.status, f.statusExtra);
                         contador--;
-                        const ret = await FtpUtils.copiarArquivo({arquivo: f.arqOriginal, pastaDestino: f.pastaRemota});
+                        const ret = await FtpUtils.copiarArquivo({ arquivo: f.arqOriginal, pastaDestino: f.pastaRemota });
                         if (ret.codRet == 1) {
                             console.log('Sucesso:  ', "Copiou com Sucesso");
                         } else {
@@ -88,11 +108,43 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
             } catch (ex) {
                 console.log("Erro: ", ex);
             }
-            console.log("✅ Listagem concluída. Encerrando serviço.");
-            this.stopSelf(); // <- Isso encerra o serviço
-        });
+            // Agendar próxima execução
+            try {
+                const intervalMillis = application.android.context
+                    .getSharedPreferences("ServicePrefs", 0)
+                    .getLong("intervalMillis", 10 * 60 * 1000);
 
-        return android.app.Service.START_NOT_STICKY;
+                const alarmManager = application.android.context.getSystemService(android.content.Context.ALARM_SERVICE);
+                const intentAlarm = new android.content.Intent(application.android.context, java.lang.Class.forName("org.homesync.myservice"));
+                const pendingIntent = android.app.PendingIntent.getService(
+                    application.android.context,
+                    0,
+                    intentAlarm,
+                    android.app.PendingIntent.FLAG_IMMUTABLE
+                );
+
+                const triggerAtMillis = java.lang.System.currentTimeMillis() + intervalMillis;
+                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                } else if (android.os.Build.VERSION.SDK_INT >= 19) {
+                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                } else {
+                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                }
+            } catch (ex) {
+                console.log("Erro reagendando MyService", ex);
+            }
+
+            console.log("✅ Listagem concluída. Encerrando serviço.");
+            Utils.liberarCpu(wakeLock);
+            isExecuting = false;
+            this.stopSelf(); // <- Isso encerra o serviço
+        } catch (errorOuter) {
+            console.log("Erro geral durante processarListagem: ", errorOuter);
+            Utils.liberarCpu(wakeLock);
+            isExecuting = false;
+            this.stopSelf();
+        }
     },
 
     onDestroy: function () {
@@ -108,7 +160,7 @@ async function listar(param, p2) {
     try {
         console.log("onListar: ", param, p2);
         //   const wakeLock = Utils.telaAtiva();
-        const arqConf = await FtpUtils.baixarArquivo({arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt")});
+        const arqConf = await FtpUtils.baixarArquivo({ arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt") });
         if (arqConf.codRet != 1) {
             console.log(arqConf);
             console.log("DeviceId: ", Utils.getDeviceId());
@@ -138,9 +190,9 @@ async function listar(param, p2) {
             if (!conf.ativo) {
                 continue;
             }
-            
+
             //FAZENDO OS DADOS REMOTOS
-            let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: conf.pastaRemota});
+            let retRemoto = await FtpUtils.listarArquivos({ grupos: ["arquivo"], pasta: conf.pastaRemota });
             retRemoto.map = {};
             if (retRemoto.codRet == 1) {
                 console.log("Qtd ftp:  ", conf.pastaRemota, retRemoto.resultado.length);
@@ -149,7 +201,7 @@ async function listar(param, p2) {
                 }
             } else {
                 console.log('message', JSON.stringify(retRemoto.error));
-            //   Utils.liberarTela(wakeLock);
+                //   Utils.liberarTela(wakeLock);
                 return;
             }
             console.log("Varendo pasta remota.Fim / ", conf.pastaRemota);
@@ -158,10 +210,10 @@ async function listar(param, p2) {
             // var retLocalPastas = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["pasta"]});
             // console.log("Varendo pasta local: Qtd: ", conf.pastaLocal, retLocalPastas.resultado);
             console.log("Varendo pasta local: ", conf.pastaLocal);
-            var retLocal = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["arquivo"]});
+            var retLocal = FileUtils.listarArquivosPorPasta({ pasta: conf.pastaLocal, grupos: ["arquivo"] });
             if (retLocal.codRet == 1) {
                 console.log("Varendo pasta local: Qtd: ", conf.pastaLocal, retLocal.resultado.length);
-            
+
                 for (let f of retLocal.resultado) {
                     if (conf.tipos.length > 0) {
                         if (f._extension == null) {
@@ -190,9 +242,9 @@ async function listar(param, p2) {
                         } else {
                             f.status = "CONFLITO";
                         }
-                    
-                    //   f.info = info;
-                    
+
+                        //   f.info = info;
+
                     } else {
                         f.status = "NÃO SALVO";
                     }
@@ -209,5 +261,5 @@ async function listar(param, p2) {
         console.log(ex);
     }
     return arrFinal;
-//   Utils.liberarTela(wakeLock);
+    //   Utils.liberarTela(wakeLock);
 }

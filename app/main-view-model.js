@@ -35,7 +35,7 @@ export function createViewModel() {
     viewModel.set('qtdSalvos', "Salvos: 21");
     viewModel.set('qtdNaoSalvos', "Não salvos: 300 ");
 
-    const arqConf = await FtpUtils.baixarArquivo({arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt")});
+    const arqConf = await FtpUtils.baixarArquivo({ arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt") });
     const configAll = JSON.parse(Utils.fixJSON(arqConf.resultado));
     const filtros = configAll.filtros;
 
@@ -48,7 +48,7 @@ export function createViewModel() {
       viewModel.selecionados = [];
     } else {
       viewModel.selecionados = [];
-      
+
       let entrada = viewModel.items;
       let saida = [];
       for (let i = 0; i < filtros.length; i++) {
@@ -59,7 +59,7 @@ export function createViewModel() {
           const filtroParam = {
             saida: saida,
             entrada: entrada,
-            atributos: {nome: "status", valor: abas[viewModel.abaSelecionada]},
+            atributos: { nome: "status", valor: abas[viewModel.abaSelecionada] },
             valor: filtro.valor,
             attr: filtro.attr
           };
@@ -81,7 +81,7 @@ export function createViewModel() {
   };
 
   viewModel.onFtp = async () => {
-    const pastas = await FtpUtils.listarArquivos({apenasPastas: true});
+    const pastas = await FtpUtils.listarArquivos({ apenasPastas: true });
     if (pastas.codRet == 1) {
       viewModel.set('items', pastas.resultado);
       viewModel.set('message', "Sucesso");
@@ -89,7 +89,7 @@ export function createViewModel() {
       viewModel.set('message', JSON.stringify(pastas.error));
     }
   };
-  
+
   viewModel.onEnviar = onEnviar;
   viewModel.onListar = onListar;
   viewModel.onExcluir = onExcluir;
@@ -137,7 +137,7 @@ export function createViewModel() {
 
 function onSelecionado(args) {
   // O item da lista correspondente
-  
+
   const item = args.object.bindingContext;
   console.log("onSelecionado:Mudou: ", item.nome, args.value);
   item.selecionado = args.value;
@@ -189,8 +189,8 @@ async function onTestes(args) {
   // const database = await Sqlite.open('data.db');
 
 
-    // Cria a tabela se não existir
-    await db.execSQL(`
+  // Cria a tabela se não existir
+  await db.execSQL(`
         CREATE TABLE IF NOT EXISTS arquivos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT,
@@ -219,21 +219,39 @@ function startAlarme(args) {
 
   const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.AlarmReceiver"));
   const pendingIntent = android.app.PendingIntent.getBroadcast(
-      context,
-      0,
-      intent,
-      android.app.PendingIntent.FLAG_IMMUTABLE
+    context,
+    0,
+    intent,
+    android.app.PendingIntent.FLAG_IMMUTABLE
   );
 
-  const intervalMillis = 10 * 1000; // 10 minutos
+  const intervalMillis = 10 * 60 * 1000; // 10 minutos
   const triggerAtMillis = java.lang.System.currentTimeMillis() + intervalMillis;
 
-  alarmManager.setRepeating(
+  application.android.context.getSharedPreferences("ServicePrefs", 0)
+    .edit()
+    .putLong("intervalMillisReceiver", intervalMillis)
+    .apply();
+
+  if (android.os.Build.VERSION.SDK_INT >= 23) {
+    alarmManager.setExactAndAllowWhileIdle(
       android.app.AlarmManager.RTC_WAKEUP,
       triggerAtMillis,
-      intervalMillis,
       pendingIntent
-  );
+    );
+  } else if (android.os.Build.VERSION.SDK_INT >= 19) {
+    alarmManager.setExact(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      pendingIntent
+    );
+  } else {
+    alarmManager.set(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      pendingIntent
+    );
+  }
   console.log("⏳ Alarme configurado para cada 10 minutos");
 
   //iniciando pela primeira vez o serviço, pois ele é incapaz de iniciar a primeira vez se estiver fechado
@@ -248,10 +266,10 @@ function stopAlarme() {
 
   const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.AlarmReceiver"));
   const pendingIntent = android.app.PendingIntent.getBroadcast(
-      context,
-      0,
-      intent,
-      android.app.PendingIntent.FLAG_IMMUTABLE
+    context,
+    0,
+    intent,
+    android.app.PendingIntent.FLAG_IMMUTABLE
   );
 
   alarmManager.cancel(pendingIntent); // Cancela o alarme
@@ -264,27 +282,41 @@ function startService(args) {
 
   const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.myservice"));
   const pendingIntent = android.app.PendingIntent.getService(
-      context,
-      0,
-      intent,
-      android.app.PendingIntent.FLAG_IMMUTABLE
+    context,
+    0,
+    intent,
+    android.app.PendingIntent.FLAG_IMMUTABLE
   );
 
-  const intervalMillis = 3 * 1000 * 60; // 10 minutos
-  const triggerAtMillis = java.lang.System.currentTimeMillis() + 20 * 1000;
+  const intervalMillis = 10 * 60 * 1000; // 10 minutos
+  const triggerAtMillis = java.lang.System.currentTimeMillis() + 10 * 1000; // 10 segundos para a primeira corrida
 
-  alarmManager.setRepeating(
+  // intervalMillis não é usado em alarmes exatos diretamente,
+  // mas guardamos o valor para o serviço se auto-reagendar
+  application.android.context.getSharedPreferences("ServicePrefs", 0)
+    .edit()
+    .putLong("intervalMillis", intervalMillis)
+    .apply();
+
+  if (android.os.Build.VERSION.SDK_INT >= 23) {
+    alarmManager.setExactAndAllowWhileIdle(
       android.app.AlarmManager.RTC_WAKEUP,
       triggerAtMillis,
-      intervalMillis,
       pendingIntent
-  );
-
-  // alarmManager.setExactAndAllowWhileIdle(
-  //   android.app.AlarmManager.RTC_WAKEUP,
-  //   triggerAtMillis,
-  //   pendingIntent
-  // );
+    );
+  } else if (android.os.Build.VERSION.SDK_INT >= 19) {
+    alarmManager.setExact(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      pendingIntent
+    );
+  } else {
+    alarmManager.set(
+      android.app.AlarmManager.RTC_WAKEUP,
+      triggerAtMillis,
+      pendingIntent
+    );
+  }
 
   console.log("⏳Alarme de Serviço configurado para cada 10 segundos");
 
@@ -305,10 +337,10 @@ function stopService() {
 
   const intent = new android.content.Intent(context, java.lang.Class.forName("org.homesync.myservice"));
   const pendingIntent = android.app.PendingIntent.getService(
-      context,
-      0,
-      intent,
-      android.app.PendingIntent.FLAG_IMMUTABLE
+    context,
+    0,
+    intent,
+    android.app.PendingIntent.FLAG_IMMUTABLE
   );
 
   alarmManager.cancel(pendingIntent); // Cancela o alarme
@@ -354,7 +386,7 @@ async function onBotaoAbas(args) {
     let abaSelecionadaCongelada = viewModel.abaSelecionada;//congelando a aba selecionada, pois a interface fica livre para mexer
     for (let item of lista) {
       if (viewModel.executando) {
-        let subArgs = {object: {}};
+        let subArgs = { object: {} };
         subArgs.object.page = args.object.page;
         subArgs.object.bindingContext = item;
         subArgs.item = item;
@@ -383,7 +415,7 @@ async function onEnviar(args) {
   }
 
   item.status = "Copiando...";
-  const ret = await FtpUtils.copiarArquivo({arquivo: item.arqOriginal, pastaDestino: item.pastaRemota});
+  const ret = await FtpUtils.copiarArquivo({ arquivo: item.arqOriginal, pastaDestino: item.pastaRemota });
   if (ret.codRet == 1) {
     item.status = "SALVO REMOTO";
     console.log('Sucesso:  ', "Copiou com Sucesso");
@@ -416,14 +448,14 @@ async function onExcluir(args) {
   }
 
   if (confirmar) {
-    console.log("Ação confirmada:  " , index, item);
+    console.log("Ação confirmada:  ", index, item);
     let res = FileUtils.excluirArquivo(item);
     if (res.cod == 1) {
       viewModel.items.splice(index, 1);
       viewModel.notifyPropertyChange("items", []);
     }
   } else {
-      console.log("Ação cancelada: ", index);
+    console.log("Ação cancelada: ", index);
   }
 }
 
@@ -439,21 +471,21 @@ async function onExcluirRemoto(args) {
     okButtonText: "Sim",
     cancelButtonText: "Não",
   }).then((result) => {
-      if (result) {
-          console.log("Ação confirmada: ", `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}`);
-          const param = {arquivo: `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}`};
-          FtpUtils.excluirArquivo(param).then((result) => {
-            if (result.codRet == 1) {
-              console.log("Arquivo excluido: ", result);
-              item.status = "NÃO SALVO";
-              viewModel.notifyPropertyChange("items", []);
-            } else {
-              console.log("Erro excluindo: ", result);
-            }
-          });
-      } else {
-          console.log("Ação cancelada: ", index);
-      }
+    if (result) {
+      console.log("Ação confirmada: ", `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}`);
+      const param = { arquivo: `${item.arquivoRemoto.pastaPai}/${item.arquivoRemoto.nome}` };
+      FtpUtils.excluirArquivo(param).then((result) => {
+        if (result.codRet == 1) {
+          console.log("Arquivo excluido: ", result);
+          item.status = "NÃO SALVO";
+          viewModel.notifyPropertyChange("items", []);
+        } else {
+          console.log("Erro excluindo: ", result);
+        }
+      });
+    } else {
+      console.log("Ação cancelada: ", index);
+    }
   });
 }
 
@@ -478,7 +510,7 @@ async function onListar(param, p2) {
   viewModel.set('message', "Listando...");
   const wakeLock = Utils.telaAtiva();
   viewModel.set('items', new ObservableArray([]));
-  const arqConf = await FtpUtils.baixarArquivo({arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt")});
+  const arqConf = await FtpUtils.baixarArquivo({ arquivo: "/Arquivos/appconfig.txt", destino: FileUtils.pastaLocal("appconfig.txt") });
   if (arqConf.codRet != 1) {
     Dialogs.alert({
       title: 'Erro',
@@ -514,9 +546,9 @@ async function onListar(param, p2) {
     if (!conf.ativo) {
       continue;
     }
-    
+
     //FAZENDO OS DADOS REMOTOS
-    let retRemoto = await FtpUtils.listarArquivos({grupos: ["arquivo"], pasta: conf.pastaRemota});
+    let retRemoto = await FtpUtils.listarArquivos({ grupos: ["arquivo"], pasta: conf.pastaRemota });
     retRemoto.map = {};
     if (retRemoto.codRet == 1) {
       console.log("Qtd ftp:  ", conf.pastaRemota, retRemoto.resultado.length);
@@ -534,10 +566,10 @@ async function onListar(param, p2) {
     // var retLocalPastas = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["pasta"]});
     // console.log("Varendo pasta local: Qtd: ", conf.pastaLocal, retLocalPastas.resultado);
     console.log("Varendo pasta local: ", conf.pastaLocal);
-    var retLocal = FileUtils.listarArquivosPorPasta({pasta: conf.pastaLocal, grupos: ["arquivo"]});
+    var retLocal = FileUtils.listarArquivosPorPasta({ pasta: conf.pastaLocal, grupos: ["arquivo"] });
     if (retLocal.codRet == 1) {
       console.log("Varendo pasta local: Qtd: ", conf.pastaLocal, retLocal.resultado.length);
-      
+
       for (let f of retLocal.resultado) {
         if (conf.tipos.length > 0) {
           if (f._extension == null) {
@@ -566,9 +598,9 @@ async function onListar(param, p2) {
           } else {
             f.status = "CONFLITO";
           }
-          
+
           // f.info = info;
-          
+
         } else {
           f.status = "NÃO SALVO";
         }
@@ -593,30 +625,30 @@ function onVisualizar(args) {
   console.log(item);
   const tipo = item._extension;
   if (tipo === ".jpg") {
-      console.log(`Visualizando foto: ${item._path}`);
-      // const imageModule = require("tns-core-modules/ui/image");
-      //   const image = new imageModule.Image();
-      //   image.src = item.caminho;
-      page.showModal("image-modal", {
-        context: { imageUrl: item._path}, // ou path completo
-        fullscreen: true,
-        animated: true,
-        closeCallback: () => {
-          console.log("Modal fechado");
-        }
-      });
+    console.log(`Visualizando foto: ${item._path}`);
+    // const imageModule = require("tns-core-modules/ui/image");
+    //   const image = new imageModule.Image();
+    //   image.src = item.caminho;
+    page.showModal("image-modal", {
+      context: { imageUrl: item._path }, // ou path completo
+      fullscreen: true,
+      animated: true,
+      closeCallback: () => {
+        console.log("Modal fechado");
+      }
+    });
   } else if (tipo === ".mp4") {
-      console.log(`Visualizando vídeo: ${item.caminho}`);
-      page.showModal("image-modal", {
-        context: { videoUrl: item._path}, // ou path completo
-        fullscreen: true,
-        animated: true,
-        closeCallback: () => {
-          console.log("Modal fechado");
-        }
-      });
+    console.log(`Visualizando vídeo: ${item.caminho}`);
+    page.showModal("image-modal", {
+      context: { videoUrl: item._path }, // ou path completo
+      fullscreen: true,
+      animated: true,
+      closeCallback: () => {
+        console.log("Modal fechado");
+      }
+    });
   } else {
-      console.warn("Tipo de arquivo desconhecido: ", item.tipo);
+    console.warn("Tipo de arquivo desconhecido: ", item.tipo);
   }
 }
 
@@ -654,37 +686,37 @@ function taskPeriodica() {
   try {
     // Exemplo de uma operação simples
     fetch('https://webhook.site/3dd0c483-0829-4350-b166-6c9bc1f23175', {
-        method: 'POST',
-        body: JSON.stringify({ 
-            timestamp: now.getTime(),
-            message: 'Tarefa periódica executada' 
-        })
+      method: 'POST',
+      body: JSON.stringify({
+        timestamp: now.getTime(),
+        message: 'Tarefa periódica executada'
+      })
     }).catch(error => {
-        console.error('Erro na requisição:', error);
+      console.error('Erro na requisição:', error);
     });
   } catch (error) {
-      console.error('Erro na tarefa periódica:', error);
+    console.error('Erro na tarefa periódica:', error);
   }
 }
 
 function configureBackgroundFetch() {
   BackgroundFetch.configure({
-      minimumFetchInterval: 15, // Intervalo mínimo aceito pelo sistema
-      stopOnTerminate: false,   // Continua mesmo após o app ser fechado
-      startOnBoot: true,        // Inicia ao reiniciar o dispositivo
-      forceReload: false        // Não força recarregamento a cada fetch
+    minimumFetchInterval: 15, // Intervalo mínimo aceito pelo sistema
+    stopOnTerminate: false,   // Continua mesmo após o app ser fechado
+    startOnBoot: true,        // Inicia ao reiniciar o dispositivo
+    forceReload: false        // Não força recarregamento a cada fetch
   }, (taskId) => {
-      // Executar a tarefa
-      taskPeriodica();
-      
-      // Importante: sempre completar a tarefa
-      BackgroundFetch.finish(taskId);
+    // Executar a tarefa
+    taskPeriodica();
+
+    // Importante: sempre completar a tarefa
+    BackgroundFetch.finish(taskId);
   }, (error) => {
-      console.error('Erro no background fetch:', error);
+    console.error('Erro no background fetch:', error);
   });
 
   // Definir o intervalo de fetch (algumas plataformas podem ajustar)
   BackgroundFetch.status((status) => {
-      console.log('Status do background fetch:', status);
+    console.log('Status do background fetch:', status);
   });
 }

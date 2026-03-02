@@ -13,12 +13,12 @@ export class Utils {
 
     static formatarBytes(bytes) {
         if (bytes === 0) return '0 Bytes';
-        
+
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(1024)); // Determina a unidade apropriada
-        
+
         const value = (bytes / Math.pow(1024, i)).toFixed(2); // Converte o valor com duas casas decimais
-        
+
         return `${value} ${sizes[i]}`; // Retorna o valor formatado 
     }
 
@@ -45,7 +45,7 @@ export class Utils {
         let deviceId;
         try {
             deviceId = ApplicationSettings.getString("device_id", null);
-        
+
             if (!deviceId) {
                 // deviceId = NativescriptUtils.UUID.randomUUID(); // Gera um novo UUID
                 ApplicationSettings.setString("device_id", deviceId); // Salva o ID no armazenamento local
@@ -60,28 +60,28 @@ export class Utils {
     static fixJSON(badJSON) {
 
         // Replace ":" with "@colon@" if it's between double-quotes
-        badJSON = badJSON.replace(/:\s*"([^"]*)"/g, function(match, p1) {
+        badJSON = badJSON.replace(/:\s*"([^"]*)"/g, function (match, p1) {
             return ': "' + p1.replace(/:/g, '@colon@') + '"';
         });
-    
+
         // Replace ":" with "@colon@" if it's between single-quotes
-        badJSON = badJSON.replace(/:\s*'([^']*)'/g, function(match, p1) {
+        badJSON = badJSON.replace(/:\s*'([^']*)'/g, function (match, p1) {
             return ': "' + p1.replace(/:/g, '@colon@') + '"';
         });
-    
+
         // Add double-quotes around any tokens before the remaining ":"
         badJSON = badJSON.replace(/(['"])?([a-z0-9A-Z_]+)(['"])?\s*:/g, '"$2": ');
-    
+
         // Turn "@colon@" back into ":"
         badJSON = badJSON.replace(/@colon@/g, ':');
-    
-      return badJSON;
+
+        return badJSON;
     }
 
     static telaAtiva() {
         const context = Application.android.getNativeApplication().getApplicationContext();
         const PowerManager = android.os.PowerManager;
-    
+
         const powerManager = context.getSystemService(android.content.Context.POWER_SERVICE);
         const wakeLock = powerManager.newWakeLock(
             // PowerManager.PARTIAL_WAKE_LOCK,
@@ -90,7 +90,7 @@ export class Utils {
             PowerManager.ON_AFTER_RELEASE,
             "MyApp::WakeLock"
         );
-    
+
         // Adquirir o Wake Lock
         wakeLock.acquire();
         console.log("Travando tela");
@@ -98,9 +98,32 @@ export class Utils {
     }
 
     static liberarTela(wakeLock) {
-        if (wakeLock.isHeld()) {
+        if (wakeLock && wakeLock.isHeld()) {
             wakeLock.release();
             console.log("Liberando tela");
+        }
+    }
+
+    static cpuAtiva() {
+        const context = Application.android.getNativeApplication().getApplicationContext();
+        const PowerManager = android.os.PowerManager;
+
+        const powerManager = context.getSystemService(android.content.Context.POWER_SERVICE);
+        const wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "MyApp::CpuWakeLock"
+        );
+
+        // Adquirir o Wake Lock por até 10 minutos (timeout de segurança)
+        wakeLock.acquire(10 * 60 * 1000);
+        console.log("Travando CPU para serviço em background");
+        return wakeLock;
+    }
+
+    static liberarCpu(wakeLock) {
+        if (wakeLock && wakeLock.isHeld()) {
+            wakeLock.release();
+            console.log("Liberando CPU");
         }
     }
 }
