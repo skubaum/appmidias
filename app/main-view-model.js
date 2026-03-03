@@ -23,6 +23,7 @@ export function createViewModel() {
   viewModel.selecionados = [];
   viewModel.cancelar = false;
   viewModel.executando = false;
+  viewModel.verificarAtualizacao = verificarAtualizacao;
   viewModel.abasBotoes = () => {
     if (viewModel.executando) {
       return "CANCELAR";
@@ -224,6 +225,69 @@ function permissaoExecutarFechado(args) {
   //   android.net.Uri.parse("package:" + application.android.context.getPackageName())
   // );
   // application.android.foregroundActivity.startActivity(newIntent);
+}
+
+async function verificarAtualizacao(args) {
+  try {
+    const context = application.android.context;
+
+    // Check permission to install packages on Android 8.0+
+    if (android.os.Build.VERSION.SDK_INT >= 26) {
+      if (!context.getPackageManager().canRequestPackageInstalls()) {
+        confirm({
+          title: "Permissão Necessária",
+          message: "Para instalar atualizações, por favor conceda a permissão 'Instalar apps desconhecidos' nas configurações.",
+          okButtonText: "Ir para Configurações",
+          cancelButtonText: "Cancelar"
+        }).then(result => {
+          if (result) {
+            const intent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+            intent.setData(android.net.Uri.parse("package:" + context.getPackageName()));
+            application.android.foregroundActivity.startActivity(intent);
+          }
+        });
+        return;
+      }
+    }
+
+    viewModel.set('message', "Pesquisando atualização no servidor FTP...");
+
+    // Download APK
+    const pathServerApk = "Arquivos/Programas/Android/appmidia.apk";
+    const cacheDir = context.getExternalFilesDir(null);
+    const apkFile = new java.io.File(cacheDir, "appmidia_update.apk");
+
+    const ret = await FtpUtils.baixarArquivo({
+      arquivo: pathServerApk,
+      destino: apkFile.getAbsolutePath()
+    });
+
+    if (ret && ret.codRet == 1) {
+      viewModel.set('message', "Download concluído. Iniciando instalação...");
+
+      let apkUri;
+      if (android.os.Build.VERSION.SDK_INT >= 24) { // Nougat e superior requer FileProvider
+        const authority = context.getPackageName() + ".provider";
+        apkUri = androidx.core.content.FileProvider.getUriForFile(context, authority, apkFile);
+      } else {
+        apkUri = android.net.Uri.fromFile(apkFile);
+      }
+
+      const intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+      intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+      intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+      intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION); // Importante para FileProvider
+
+      context.startActivity(intent);
+      viewModel.set('message', "Instalador iniciado.");
+    } else {
+      viewModel.set('message', "Não foi possível baixar a atualização.");
+      console.log("Erro no download APK: ", ret.error);
+    }
+  } catch (error) {
+    viewModel.set('message', "Erro ao verificar atualizações.");
+    console.log("Erro Updater: ", error);
+  }
 }
 
 function startAlarme(args) {
