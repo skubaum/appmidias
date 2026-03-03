@@ -6,6 +6,34 @@ import { FtpUtils } from './ftputils';
 import { Utils } from './utils';
 import { ConectionUtils } from './connectionutils';
 
+function agendarProximaExecucao() {
+    try {
+        const intervalMillis = application.android.context
+            .getSharedPreferences("ServicePrefs", 0)
+            .getLong("intervalMillis", 10 * 60 * 1000);
+
+        const alarmManager = application.android.context.getSystemService(android.content.Context.ALARM_SERVICE);
+        const intentAlarm = new android.content.Intent(application.android.context, java.lang.Class.forName("org.homesync.AlarmReceiver"));
+        const pendingIntent = android.app.PendingIntent.getBroadcast(
+            application.android.context,
+            0,
+            intentAlarm,
+            android.app.PendingIntent.FLAG_IMMUTABLE
+        );
+
+        const triggerAtMillis = java.lang.System.currentTimeMillis() + intervalMillis;
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+        } else if (android.os.Build.VERSION.SDK_INT >= 19) {
+            alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+        } else {
+            alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+        }
+    } catch (ex) {
+        console.log("Erro reagendando a proxima execucao. ", ex);
+    }
+}
+
 let isExecuting = false;
 
 export const myService = android.app.Service.extend("org.homesync.myservice", {
@@ -58,24 +86,24 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
 
         if (!ConectionUtils.isWifi()) {
             console.log("Rede não é Wifi. Não executando tarefa de sincronização.");
-            // Coloque aqui a lógica do serviço
             setTimeout(() => {
-                console.log("✅ Tarefa concluída. Encerrando serviço.");
+                console.log("✅ Tarefa concluída [Sem WiFi]. Encerrando serviço.");
+                agendarProximaExecucao();
                 Utils.liberarCpu(wakeLock);
                 isExecuting = false;
-                this.stopSelf(); // <- Isso encerra o serviço
-            }, 5000); // 5 segundos só como exemplo
+                this.stopSelf();
+            }, 5000);
             return android.app.Service.START_NOT_STICKY;
         }
         if (!ConectionUtils.servidorOnline()) {
             console.log("O servidor não está online. Não executando tarefa de sincronização.");
-            // Coloque aqui a lógica do serviço
             setTimeout(() => {
-                console.log("✅ Tarefa concluída. Encerrando serviço.");
+                console.log("✅ Tarefa concluída [Sem Servidor]. Encerrando serviço.");
+                agendarProximaExecucao();
                 Utils.liberarCpu(wakeLock);
                 isExecuting = false;
-                this.stopSelf(); // <- Isso encerra o serviço
-            }, 5000); // 5 segundos só como exemplo
+                this.stopSelf();
+            }, 5000);
             return android.app.Service.START_NOT_STICKY;
         }
 
@@ -108,39 +136,15 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
             } catch (ex) {
                 console.log("Erro: ", ex);
             }
-            // Agendar próxima execução
-            try {
-                const intervalMillis = application.android.context
-                    .getSharedPreferences("ServicePrefs", 0)
-                    .getLong("intervalMillis", 10 * 60 * 1000);
-
-                const alarmManager = application.android.context.getSystemService(android.content.Context.ALARM_SERVICE);
-                const intentAlarm = new android.content.Intent(application.android.context, java.lang.Class.forName("org.homesync.myservice"));
-                const pendingIntent = android.app.PendingIntent.getService(
-                    application.android.context,
-                    0,
-                    intentAlarm,
-                    android.app.PendingIntent.FLAG_IMMUTABLE
-                );
-
-                const triggerAtMillis = java.lang.System.currentTimeMillis() + intervalMillis;
-                if (android.os.Build.VERSION.SDK_INT >= 23) {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
-                } else if (android.os.Build.VERSION.SDK_INT >= 19) {
-                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
-                } else {
-                    alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
-                }
-            } catch (ex) {
-                console.log("Erro reagendando MyService", ex);
-            }
 
             console.log("✅ Listagem concluída. Encerrando serviço.");
+            agendarProximaExecucao();
             Utils.liberarCpu(wakeLock);
             isExecuting = false;
             this.stopSelf(); // <- Isso encerra o serviço
         } catch (errorOuter) {
             console.log("Erro geral durante processarListagem: ", errorOuter);
+            agendarProximaExecucao();
             Utils.liberarCpu(wakeLock);
             isExecuting = false;
             this.stopSelf();
