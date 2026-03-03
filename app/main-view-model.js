@@ -639,11 +639,8 @@ function onVisualizar(args) {
   const tipo = item._extension;
   if (tipo === ".jpg") {
     console.log(`Visualizando foto: ${item._path}`);
-    // const imageModule = require("tns-core-modules/ui/image");
-    //   const image = new imageModule.Image();
-    //   image.src = item.caminho;
     page.showModal("image-modal", {
-      context: { imageUrl: item._path }, // ou path completo
+      context: { imageUrl: item._path, nome: item.nome }, // Passa a imagem e o nome real
       fullscreen: true,
       animated: true,
       closeCallback: () => {
@@ -653,7 +650,7 @@ function onVisualizar(args) {
   } else if (tipo === ".mp4") {
     console.log(`Visualizando vídeo: ${item.caminho}`);
     page.showModal("image-modal", {
-      context: { videoUrl: item._path }, // ou path completo
+      context: { videoUrl: item._path, nome: item.nome }, // Passa o video e o nome real
       fullscreen: true,
       animated: true,
       closeCallback: () => {
