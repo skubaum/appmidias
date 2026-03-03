@@ -2,8 +2,9 @@
     <ActionBar title="Ftp-Sync">
         <!-- Ícones ou texto na direita -->
         <ActionItem text="Testes" tap="{{ onTestes }}" ios.position="right" android.position="actionBar" />
-        
+                
         <!-- Mais opções via menu de overflow -->
+		<ActionItem text="Auditoria" tap="{{ onOpenAudit }}" ios.position="more" android.position="popup" />
         <ActionItem text="Executar Fechado" tap="{{ permissaoExecutarFechado }}" ios.position="more" android.position="popup" />
         <ActionItem text="Iniciar Alarme" tap="{{ startAlarme }}" ios.position="more" android.position="popup" />
         <ActionItem text="Parar Alarme" tap="{{ stopAlarme }}" ios.position="more" android.position="popup" />

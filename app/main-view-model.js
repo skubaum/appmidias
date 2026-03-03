@@ -30,6 +30,19 @@ export function createViewModel() {
     return ['EXCLUIR LOCAL', 'ENVIAR SELECIONADOS', 'EXCLUIR REMOTO'][viewModel.abaSelecionada];
   };
 
+  viewModel.onOpenAudit = (args) => {
+    const page = args.object.page;
+    page.frame.navigate({
+      moduleName: "audit-page",
+      animated: true,
+      transition: {
+        name: "slide",
+        duration: 200,
+        curve: "ease"
+      }
+    });
+  };
+
   viewModel.onTap = async () => {
     viewModel.counter--;
     viewModel.set('qtdSalvos', "Salvos: 21");

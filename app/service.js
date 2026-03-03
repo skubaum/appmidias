@@ -5,6 +5,7 @@ import { FileUtils } from './fileutils';
 import { FtpUtils } from './ftputils';
 import { Utils } from './utils';
 import { ConectionUtils } from './connectionutils';
+import { Logger } from './logger';
 
 function agendarProximaExecucao() {
     try {
@@ -43,6 +44,7 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
 
     onStartCommand: function (intent, flags, startId) {
         console.log("Serviço iniciado comando");
+        Logger.log("Iniciando rotina de background para FTP Sync...");
 
         if (isExecuting) {
             console.log("⚠️ Já existe uma sincronização em andamento. Execução sobreposta bloqueada.");
@@ -86,6 +88,7 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
 
         if (!ConectionUtils.isWifi()) {
             console.log("Rede não é Wifi. Não executando tarefa de sincronização.");
+            Logger.log("Sincronização abortada: Sem conexão Wi-Fi ativa.");
             setTimeout(() => {
                 console.log("✅ Tarefa concluída [Sem WiFi]. Encerrando serviço.");
                 agendarProximaExecucao();
@@ -97,6 +100,7 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
         }
         if (!ConectionUtils.servidorOnline()) {
             console.log("O servidor não está online. Não executando tarefa de sincronização.");
+            Logger.log("Sincronização abortada: Servidor FTP inalcalçável.");
             setTimeout(() => {
                 console.log("✅ Tarefa concluída [Sem Servidor]. Encerrando serviço.");
                 agendarProximaExecucao();
@@ -117,6 +121,16 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
         try {
             const arrFinal = await listar("param", "p2");
             let contador = 20;
+            let countSuccess = 0;
+            let countError = 0;
+            let countTotal = 0;
+
+            for (let f of arrFinal) {
+                if (f.status == "NÃO SALVO") {
+                    countTotal++;
+                }
+            }
+
             try {
                 for (let f of arrFinal) {
                     if (f.status == "NÃO SALVO") {
@@ -125,8 +139,10 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
                         const ret = await FtpUtils.copiarArquivo({ arquivo: f.arqOriginal, pastaDestino: f.pastaRemota });
                         if (ret.codRet == 1) {
                             console.log('Sucesso:  ', "Copiou com Sucesso");
+                            countSuccess++;
                         } else {
                             console.log('Erro: ', ret.error);
+                            countError++;
                         }
                     }
                     if (contador <= 0) {
@@ -135,6 +151,12 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
                 }
             } catch (ex) {
                 console.log("Erro: ", ex);
+            }
+
+            if (countSuccess > 0 || countError > 0) {
+                Logger.log(`Lote finalizado: ${countSuccess} de ${countTotal} arquivos enviados com sucesso, ${countError} erros.`);
+            } else {
+                Logger.log("Verificação finalizada: Nenhum arquivo novo para enviar neste lote.");
             }
 
             console.log("✅ Listagem concluída. Encerrando serviço.");
