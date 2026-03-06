@@ -1,7 +1,7 @@
 <Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" loaded="onPageLoaded">
     <ActionBar title="Ftp-Sync">
         <!-- Ícones ou texto na direita -->
-        <ActionItem text="Testes1" tap="{{ onTestes }}" ios.position="right" android.position="actionBar" />
+        <ActionItem text="Testes" tap="{{ onTestes }}" ios.position="right" android.position="actionBar" />
                 
         <!-- Mais opções via menu de overflow -->
 		<ActionItem text="Auditoria" tap="{{ onOpenAudit }}" ios.position="more" android.position="popup" />

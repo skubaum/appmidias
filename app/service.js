@@ -86,6 +86,12 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
             wakeLock = Utils.cpuAtiva();
         } catch (e) { console.log(e); }
 
+        this.executarRotina(wakeLock);
+
+        return android.app.Service.START_NOT_STICKY;
+    },
+
+    executarRotina: async function (wakeLock) {
         if (!ConectionUtils.isWifi()) {
             console.log("Rede não é Wifi. Não executando tarefa de sincronização.");
             Logger.log("Sincronização abortada: Sem conexão Wi-Fi ativa.");
@@ -96,11 +102,12 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
                 isExecuting = false;
                 this.stopSelf();
             }, 5000);
-            return android.app.Service.START_NOT_STICKY;
+            return;
         }
-        if (!ConectionUtils.servidorOnline()) {
+        const hostAlvo = ConectionUtils.burcarEnderecoServidor();
+        if (!(await ConectionUtils.servidorOnlineAsync(hostAlvo))) {
             console.log("O servidor não está online. Não executando tarefa de sincronização.");
-            Logger.log("Sincronização abortada: Servidor FTP inalcalçável.");
+            Logger.log(`Sincronização abortada: Servidor FTP inalcalçável (${hostAlvo}).`);
             setTimeout(() => {
                 console.log("✅ Tarefa concluída [Sem Servidor]. Encerrando serviço.");
                 agendarProximaExecucao();
@@ -108,13 +115,11 @@ export const myService = android.app.Service.extend("org.homesync.myservice", {
                 isExecuting = false;
                 this.stopSelf();
             }, 5000);
-            return android.app.Service.START_NOT_STICKY;
+            return;
         }
 
         // Executa a listagem aguardando ela terminar
         this.processarListagem(wakeLock);
-
-        return android.app.Service.START_NOT_STICKY;
     },
 
     processarListagem: async function (wakeLock) {
